@@ -82,10 +82,10 @@ impl AssetConfig {
     /// use topcoat::asset::{AssetConfig, Manifest};
     ///
     /// let manifest = Manifest::parse("version = 1\nassets = []").unwrap();
-    /// let config = AssetConfig::hosted_at(manifest, "https://cdn.example.com/assets");
+    /// let config = AssetConfig::hosted_at("https://cdn.example.com/assets", manifest);
     /// ```
     #[must_use]
-    pub fn hosted_at(assets: impl Into<AssetCatalog>, base_url: impl Into<String>) -> Self {
+    pub fn hosted_at(base_url: impl Into<String>, assets: impl Into<AssetCatalog>) -> Self {
         let mut base_url = base_url.into();
         while base_url.ends_with('/') {
             base_url.pop();
@@ -196,7 +196,7 @@ mod tests {
     #[test]
     fn hosted_at_trims_trailing_slashes() {
         let config =
-            AssetConfig::hosted_at(AssetCatalog::default(), "https://cdn.example.com/assets///");
+            AssetConfig::hosted_at("https://cdn.example.com/assets///", AssetCatalog::default());
 
         assert_eq!(config.base_url(), "https://cdn.example.com/assets");
     }
@@ -217,7 +217,7 @@ content_type = "image/png"
         .unwrap();
         let asset = manifest.assets[0].id;
 
-        let config = AssetConfig::hosted_at(manifest, "https://cdn.example.com/assets");
+        let config = AssetConfig::hosted_at("https://cdn.example.com/assets", manifest);
 
         assert_eq!(
             config.resolve(asset),
