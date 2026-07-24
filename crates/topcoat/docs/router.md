@@ -325,6 +325,8 @@ topcoat::serve(listener, router).await
 
 The socket file of a previous run is not removed automatically, so remove any stale file before binding, as above.
 
+Serving is the only part of the framework that depends on tokio and hyper, and it sits behind the `serve` cargo feature, enabled by default. The rest (routing, views, and request handling) works without it: [`Router::handle`] turns a [`Request`] into a [`Response`] directly, with no listener involved. On a platform that receives HTTP requests for you, such as a serverless or WebAssembly runtime, build `topcoat` without default features, leave `serve` off, and call [`Router::handle`] from the platform's request handler.
+
 # Tower services
 
 With the `tower` feature enabled, the [`tower`](mod@tower) module bridges the tower ecosystem: [`TowerRoute`](tower::TowerRoute) mounts a tower service (like an axum router) as a route, and [`TowerLayer`](tower::TowerLayer) runs tower middleware as a layer. See the [`tower`](mod@tower) module docs for details.
