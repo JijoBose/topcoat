@@ -198,6 +198,7 @@ view! { <link rel="stylesheet" href=(topcoat::tailwind::stylesheet!())> }
 
 **Start here**
 - [Getting started](https://github.com/tokio-rs/topcoat/blob/main/crates/topcoat/docs/getting_started.md): create a new project, install the CLI, run the dev server.
+- [Creating projects](https://github.com/tokio-rs/topcoat/blob/main/crates/topcoat-cli/docs/new.md): `topcoat new` to scaffold a pre-configured project.
 - [Source code formatting](https://github.com/tokio-rs/topcoat/blob/main/crates/topcoat-cli/docs/fmt.md): `topcoat fmt` for macro bodies.
 
 **Rendering**
@@ -241,7 +242,6 @@ view! { <link rel="stylesheet" href=(topcoat::tailwind::stylesheet!())> }
 
 Planned features we'd like to bring to Topcoat. Have an idea? [Open an issue](https://github.com/tokio-rs/topcoat/issues).
 
-- [ ] `topcoat new` CLI command to bootstrap pre-configured projects
 - [ ] Static export
 - [ ] (More) reactivity (`topcoat-runtime`)
 - [ ] More Topcoat UI components, full "blocks" e.g. sign-in form

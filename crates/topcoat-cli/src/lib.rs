@@ -4,6 +4,7 @@ mod asset;
 mod cargo;
 mod dev;
 mod fmt;
+mod new;
 mod ui;
 
 use clap::{Parser, Subcommand};
@@ -17,6 +18,8 @@ pub struct TopcoatCli {
 
 #[derive(Subcommand)]
 enum Command {
+    /// Create a new pre-configured project
+    New(new::NewCommand),
     /// Start a development server
     Dev(dev::DevCommand),
     /// Format topcoat `view!` macros
@@ -30,6 +33,7 @@ enum Command {
 pub async fn run() {
     let cli = TopcoatCli::parse();
     match cli.command {
+        Command::New(cmd) => cmd.run(),
         Command::Ui(cmd) => cmd.run(),
         Command::Fmt(cmd) => cmd.run().await,
         Command::Dev(cmd) => cmd.run().await,
