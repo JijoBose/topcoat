@@ -126,6 +126,10 @@ async fn create_user(cx: &Cx, Json(input): Json<CreateUser>) -> Result<Json<User
 
 The context and the body parameter are both optional and may appear in either order, but there can be at most one body parameter, because the body is a stream that can only be consumed once. Pages use the same [`FromRequest`] parsing, but return a rendered view rather than an [`IntoResponse`] value. See [`FromRequest`] and [`IntoResponse`] for the implementing types.
 
+# WebSockets
+
+With the `websocket` feature enabled, a route can serve WebSocket connections. The handler takes a [`WebSocketUpgrade`](websocket::WebSocketUpgrade) parameter and calls [`on_upgrade`](websocket::WebSocketUpgrade::on_upgrade) with a callback that talks to the client. See the [`websocket`](mod@websocket) module docs for more.
+
 # Path and query parameters
 
 Path and query values are read from [`Cx`](crate::context::Cx), not injected as handler arguments. This keeps the handler signature limited to request context and body parsing, while allowing helper functions and layouts to read the same parameters.
@@ -324,6 +328,8 @@ topcoat::serve(listener, router).await
 ```
 
 The socket file of a previous run is not removed automatically, so remove any stale file before binding, as above.
+
+Serving is the only part of the framework that depends on tokio and hyper, and it sits behind the `serve` cargo feature, enabled by default. The rest (routing, views, and request handling) works without it: [`Router::handle`] turns a [`Request`] into a [`Response`] directly, with no listener involved. On a platform that receives HTTP requests for you, such as a serverless or WebAssembly runtime, build `topcoat` without default features, leave `serve` off, and call [`Router::handle`] from the platform's request handler.
 
 # Tower services
 
