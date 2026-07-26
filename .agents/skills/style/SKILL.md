@@ -3,69 +3,42 @@ name: style
 description: Always use this skill before writing or editing Rust code or documentation in the Topcoat repository
 ---
 
-# Topcoat Style
+# Code Style
 
-Load this skill before writing or editing code or documentation in this project.
+## General
 
-**Always read [`STYLE.md`](../../../STYLE.md) before making a change.** It is the
-authoritative style guide; [`AGENTS.md`](../../../AGENTS.md) describes the
-workspace layout and points to the per-feature guides under `docs/`. This skill
-distills the rules that are easiest to miss.
-
-## Safety
-
-Only safe code. `unsafe` is not allowed.
-
-## Locality of behavior
-
-Keep related code together. A struct is immediately followed by its inherent
-`impl` block and then its trait impls, before the next struct is declared.
+* Keep related code together: a struct is immediately followed by its inherent `impl` and then its trait impls, before the next struct in the file. Unit tests (`#[cfg(test)] mod tests`) go at the very bottom of the file.
+* Free functions are allowed, but first consider whether a more idiomatic Rust grouping onto a struct exists.
+* Unsafe code is not allowed in this project, unless wrapped by a reputable dependency.
 
 ## Barrel files
 
-A module's barrel file declares its submodules and re-exports each with a glob
-rather than listing individual items. Third-party items are re-exported by name.
-Name a module file after the module and place it alongside its directory
-(`foo.rs` next to `foo/`), never `foo/mod.rs`.
+Name a module's file after the module and place it alongside its directory (`foo.rs` next to `foo/`), never `foo/mod.rs`. A barrel file declares all submodules and re-exports each with a glob; only third-party items are re-exported by name.
 
 ```rust
 mod content;
 mod error;
+mod request;
 
 pub use content::*;
 pub use error::*;
+pub use request::*;
 
 pub use http::Method;
 ```
 
+When a module's submodules are peers that make up a whole (the CLI commands `fmt`, `dev`, `asset`; the macros `expr`, `procedure`, `shard`), put anything shared between them in a `common` submodule so it does not read as another peer.
+
 ## Dependencies
 
-Declare every dependency once in the top-level `Cargo.toml` under
-`[workspace.dependencies]` with only a version and no features. Each crate pulls
-it in with `workspace = true` and opts into the features it needs.
-
-## Procedural macros
-
-In `Parse` impls, parse directly into the `Self { ... }` fields rather than
-through `let` bindings. Use a `let` only when a parsed value must be inspected to
-decide how to parse a later field.
+* Declare every dependency in the top-level `Cargo.toml` under `[workspace.dependencies]` with only a version and no features. Crates pull it in with `workspace = true` and opt into features there.
 
 ## Documentation
 
-Item docs say what something is and how to use it; avoid implementation detail
-unless it matters to a caller. Describe the current state only -- never reference
-previous iterations of the code.
-
-The `docs/` markdown mirrors the module documentation in
-`crates/topcoat/src/*.rs`. Rust module docs use relative code links; the
-markdown under `docs/` uses absolute links.
-
-## Characters
-
-Use only plain-ASCII characters found on a US keyboard: `-` or `--` instead of
-an em dash, `->` instead of a Unicode arrow, `...` instead of an ellipsis.
-
-## Tests
-
-Unit tests (`#[cfg(test)] mod tests`) go at the very bottom of the file. See the
-[`check`](../check/SKILL.md) skill for how to run the test suite.
+* Item docs describe what something is/does and how to use it. Avoid implementation details unless relevant to a caller.
+* Describe the current state only; never reference previous iterations ("this used to be A but is now B").
+* Avoid exhaustively listig specific implementations or uses that could evolve over time and go stale. Keep documentation robust to changes.
+* Use only ASCII characters in both code and documentation, e.g. `->` instead of unicode arrow or `...` instead of ellipsis character.
+* Avoid em-dashes entirely. Use colons and semicolons sparingly.
+* Avoid using `ignore` for code snippets to keep them type-checked.
+* Use simple, concise language, no fancy words.
