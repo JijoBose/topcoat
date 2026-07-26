@@ -299,6 +299,10 @@ pub fn router() -> Router {
 
 This finds annotated items across your crate and dependencies. Discovered layers must have unique paths because link-time collection order is not stable; if you need to stack several layers on one path, register them explicitly with `.layer(...)`.
 
+Other features collect their own annotated items at link time, so `discover()` registers those too, such as the fonts declared with `font!`. Values that are not annotated items are always registered by hand, including the asset bundle (`.assets(...)`) and application context (`.app_context(...)`).
+
+[`module_router!`] registers module-derived handlers only. It returns a `RouterBuilder`, so call `discover()` on it, or register the remaining items by hand, exactly as above.
+
 # Serving
 
 Use [`start`](crate::start) to run a finalized router:
