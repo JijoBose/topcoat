@@ -709,6 +709,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "91622ff5e7162018101f2fea40d6ebf4a78bbe5a49736a2020649edf9693679e"
 
 [[package]]
+name = "email-encoding"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9298e6504d9b9e780ed3f7dfd43a61be8cd0e09eb07f7706a945b0072b6670b6"
+dependencies = [
+ "base64",
+ "memchr",
+]
+
+[[package]]
+name = "email_address"
+version = "0.2.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e079f19b08ca6239f47f8ba8509c11cf3ea30095831f7fed61441475edd8c449"
+
+[[package]]
 name = "encode_unicode"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -750,6 +766,12 @@ name = "fallible-streaming-iterator"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7360491ce676a36bf9bb3c56c1aa791658183a54d2744120f27285738d90465a"
+
+[[package]]
+name = "fastrand"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
 
 [[package]]
 name = "find-msvc-tools"
@@ -827,6 +849,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7e3450815272ef58cec6d564423f6e755e25379b217b0bc688e295ba24df6b1d"
 
 [[package]]
+name = "futures-io"
+version = "0.3.33"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4577ecaa3c4f96589d473f679a71b596316f6641bc350038b962a5daf0085d7a"
+
+[[package]]
 name = "futures-macro"
 version = "0.3.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -856,9 +884,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "389ca41296e6190b48053de0321d02a77f32f8a5d2461dd38762c0593805c6d6"
 dependencies = [
  "futures-core",
+ "futures-io",
  "futures-macro",
  "futures-sink",
  "futures-task",
+ "memchr",
  "pin-project-lite",
  "slab",
 ]
@@ -1047,6 +1077,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c49c37c09c17a53d937dfbb742eb3a961d65a994e6bcdcf37e7399d0cc8ab5e"
 dependencies = [
  "digest 0.10.7",
+]
+
+[[package]]
+name = "hostname"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "617aaa3557aef3810a6369d0a99fac8a080891b68bd9f9812a1eeda0c0730cbd"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "windows-link",
 ]
 
 [[package]]
@@ -1406,6 +1447,34 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09edd9e8b54e49e587e4f6295a7d29c3ea94d469cb40ab8ca70b288248a81db2"
 
 [[package]]
+name = "lettre"
+version = "0.11.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0da65617f6cb926332d039cb578aad56178da86e128db6a1b09f4c94fa5b3349"
+dependencies = [
+ "async-trait",
+ "base64",
+ "email-encoding",
+ "email_address",
+ "fastrand",
+ "futures-io",
+ "futures-util",
+ "hostname",
+ "httpdate",
+ "idna",
+ "mime",
+ "nom",
+ "percent-encoding",
+ "quoted_printable",
+ "rustls",
+ "socket2",
+ "tokio",
+ "tokio-rustls",
+ "url",
+ "webpki-roots",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.184"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1524,6 +1593,15 @@ dependencies = [
  "mime",
  "spin",
  "version_check",
+]
+
+[[package]]
+name = "nom"
+version = "8.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df9761775871bdef83bee530e60050f7e54b1105350d6884eb0fb4f46c2f9405"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]
@@ -1785,6 +1863,12 @@ checksum = "41f2619966050689382d2b44f664f4bc593e129785a36d6ee376ddf37259b924"
 dependencies = [
  "proc-macro2",
 ]
+
+[[package]]
+name = "quoted_printable"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "478e0585659a122aa407eb7e3c0e1fa51b1d8a870038bd29f0cf4a8551eea972"
 
 [[package]]
 name = "r-efi"
@@ -2546,6 +2630,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tokio-rustls"
+version = "0.26.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1729aa945f29d91ba541258c8df89027d5792d85a8841fb65e8bf0f4ede4ef61"
+dependencies = [
+ "rustls",
+ "tokio",
+]
+
+[[package]]
 name = "tokio-stream"
 version = "0.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2653,6 +2747,8 @@ dependencies = [
  "topcoat-htmx",
  "topcoat-icon",
  "topcoat-icon-macro",
+ "topcoat-mail",
+ "topcoat-mail-macro",
  "topcoat-router",
  "topcoat-router-macro",
  "topcoat-runtime",
@@ -2716,6 +2812,7 @@ dependencies = [
  "topcoat-core",
  "topcoat-core-grammar",
  "topcoat-font-grammar",
+ "topcoat-mail-grammar",
  "topcoat-router",
  "topcoat-ui",
  "topcoat-view-grammar",
@@ -2744,7 +2841,9 @@ dependencies = [
  "anymap3",
  "boxcar",
  "hashbrown 0.17.0",
+ "http",
  "pin-project-lite",
+ "thiserror",
  "tokio",
  "topcoat",
 ]
@@ -2860,6 +2959,42 @@ dependencies = [
  "syn",
  "topcoat",
  "topcoat-icon-grammar",
+]
+
+[[package]]
+name = "topcoat-mail"
+version = "0.4.0"
+dependencies = [
+ "lettre",
+ "thiserror",
+ "time",
+ "tokio",
+ "topcoat-core",
+ "topcoat-router",
+ "topcoat-view",
+]
+
+[[package]]
+name = "topcoat-mail-grammar"
+version = "0.4.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+ "topcoat-core-grammar",
+ "topcoat-mail",
+ "topcoat-view-grammar",
+]
+
+[[package]]
+name = "topcoat-mail-macro"
+version = "0.4.0"
+dependencies = [
+ "quote",
+ "syn",
+ "tokio",
+ "topcoat",
+ "topcoat-mail-grammar",
 ]
 
 [[package]]

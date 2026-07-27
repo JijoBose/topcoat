@@ -36,6 +36,8 @@ full = [
 	"htmx",
 	"icon",
 	"icon-iconify",
+	"mail",
+	"mail-smtp",
 	"multipart",
 	"router",
 	"runtime",
@@ -94,6 +96,15 @@ icon-iconify = [
 	"topcoat-icon-macro/iconify",
 	"topcoat-icon/iconify-build",
 ]
+mail = [
+	"dep:topcoat-mail",
+	"dep:topcoat-mail-macro",
+	"view",
+]
+mail-smtp = [
+	"mail",
+	"topcoat-mail/smtp",
+]
 multipart = [
 	"router",
 	"topcoat-router/multipart",
@@ -105,6 +116,7 @@ router = [
 	"topcoat-asset?/router",
 	"topcoat-cookie?/router",
 	"topcoat-font?/router",
+	"topcoat-mail?/router",
 	"topcoat-runtime?/router",
 	"topcoat-session?/router",
 ]
@@ -155,6 +167,8 @@ topcoat-font-macro = { workspace = true, optional = true }
 topcoat-htmx = { workspace = true, optional = true }
 topcoat-icon = { workspace = true, optional = true }
 topcoat-icon-macro = { workspace = true, optional = true }
+topcoat-mail = { workspace = true, optional = true }
+topcoat-mail-macro = { workspace = true, optional = true }
 topcoat-router = { workspace = true, optional = true }
 topcoat-router-macro = { workspace = true, optional = true }
 topcoat-runtime = { workspace = true, optional = true }

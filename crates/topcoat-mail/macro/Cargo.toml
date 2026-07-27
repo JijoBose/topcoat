@@ -1,5 +1,5 @@
 [package]
-name = "topcoat-core"
+name = "topcoat-mail-macro"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -10,22 +10,17 @@ keywords.workspace = true
 categories.workspace = true
 rust-version.workspace = true
 
-[features]
-# Exposes the `cache` module for use from build scripts.
-build = []
+[lib]
+proc-macro = true
 
 [dependencies]
-anyhow.workspace = true
-anymap3.workspace = true
-boxcar.workspace = true
-hashbrown.workspace = true
-http.workspace = true
-pin-project-lite.workspace = true
-thiserror.workspace = true
-tokio = { workspace = true, features = ["sync"] }
+topcoat-mail-grammar.workspace = true
+
+quote.workspace = true
+syn = { workspace = true, features = ["full"] }
 
 [dev-dependencies]
-topcoat.workspace = true
+topcoat = { workspace = true, features = ["mail"] }
 tokio = { workspace = true, features = ["macros", "rt"] }
 
 [lints]
@@ -34,6 +29,3 @@ workspace = true
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
-
-[package.metadata.cargo-udeps.ignore]
-development = ["topcoat"]
