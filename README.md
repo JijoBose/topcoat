@@ -248,6 +248,7 @@ Planned features we'd like to bring to Topcoat. Have an idea? [Open an issue](ht
 - [ ] Emailing
 - [ ] Better [Toasty](https://github.com/tokio-rs/toasty) integration (safely create/update records from forms without listing out all the fields)
 - [ ] Validations
+- [ ] Localization support
 - [ ] `OpenAPI` endpoints
 - [ ] Sitemaps
 - [ ] Docs for how to deploy Topcoat
@@ -257,6 +258,7 @@ Planned features we'd like to bring to Topcoat. Have an idea? [Open an issue](ht
 - [ ] `WebTransport`
 - [ ] Server-sent events
 - [ ] Image optimization / resizing
+- [ ] Markdown support
 - [ ] Easier-to-use middlewares like rate-limiting, compression, etc.
 - [ ] Authentication
 - [ ] Background jobs
