@@ -229,10 +229,8 @@ view! { <link rel="stylesheet" href=(topcoat::tailwind::stylesheet!())> }
 - [Procedures](https://docs.rs/topcoat/latest/topcoat/runtime/attr.procedure.html): async server functions callable from the browser.
 - [Shards](https://docs.rs/topcoat/latest/topcoat/runtime/attr.shard.html): components that re-render on the server when their arguments change.
 
-**UI components**
+**Miscellaneous**
 - [Topcoat UI](https://github.com/tokio-rs/topcoat/blob/main/crates/topcoat/docs/ui.md): premade components vendored into your project for you to edit.
-
-**Mail**
 - [Mail](https://docs.rs/topcoat/latest/topcoat/mail/index.html): declare mail with the `mail!` macro, deliver through SMTP, file, or in-memory transports.
 
 **Third-party integrations**
