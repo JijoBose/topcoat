@@ -3,7 +3,7 @@
 use proc_macro::TokenStream;
 use quote::quote;
 
-#[doc = include_str!("../docs/memoization.md")]
+#[doc = include_str!("../docs/memoize.md")]
 #[proc_macro_attribute]
 pub fn memoize(attr: TokenStream, item: TokenStream) -> TokenStream {
     match topcoat_core_grammar::memoize::Memoize::parse(attr.into(), item.into()) {

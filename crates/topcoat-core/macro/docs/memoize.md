@@ -137,9 +137,15 @@ async fn current_user(cx: &Cx) -> Option<User> {
     auth::resolve(cx).await
 }
 
+#[page]
+async fn dashboard(cx: &Cx) -> Result {
+    let user = current_user(cx).await; // computes once
+    view! { <h1>"Welcome, " (user.unwrap().name.clone())</h1> }
+}
+
 #[layout]
 async fn root(cx: &Cx, slot: Result) -> Result {
-    let user = current_user(cx).await; // computes once
+    let user = current_user(cx).await; // cache hit, no extra DB query
     view! {
         <header>
             match user {
@@ -152,12 +158,6 @@ async fn root(cx: &Cx, slot: Result) -> Result {
         (slot?)
     }
 }
-
-#[page]
-async fn dashboard(cx: &Cx) -> Result {
-    let user = current_user(cx).await; // cache hit, no extra DB query
-    view! { <h1>"Welcome, " (user.unwrap().name.clone())</h1> }
-}
 ```
 
-The layout and the page each call `current_user(cx)`, but the database is queried at most once per request.
+The page renders before the layout it is wrapped in, so the page computes the user and the layout reads it from the cache. Either way the database is queried at most once per request.
