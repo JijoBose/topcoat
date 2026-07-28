@@ -8,7 +8,7 @@ Point the command at the directory to create:
 topcoat new my-app
 ```
 
-This writes a ready-to-run project into `my-app/` and, when git is available and the directory is not already inside a repository, initializes a git repository for it. The final component of the path (`my-app`) becomes the package name.
+This writes a ready-to-run project into `my-app/` and, when git is available and the directory is not already inside a repository, initializes a git repository for it. The final component of the path (`my-app`) becomes the package name. Pick a different system, or none at all, with [`--vcs`](#version-control).
 
 With no `--template`, the command prompts for one when run in a terminal. Pick a template up front to skip the prompt:
 
@@ -37,7 +37,19 @@ Each template scaffolds a complete, compilable app. Choose one with `--template`
 - `--name <NAME>`: set the package name explicitly, independent of the directory name.
 - `--template <TEMPLATE>`, `-t <TEMPLATE>`: the template to scaffold (`minimal`, `tailwind`, or `runtime`). When omitted, the command prompts for one; in a non-interactive context (no terminal), a template must be passed.
 - `--path <DIR>`: depend on a local `topcoat` checkout by path instead of the crates.io version, for testing an unreleased `topcoat`. See below.
-- `--no-git`: do not initialize a git repository in the new project.
+- `--vcs <VCS>`: the version control system to initialize a repository for (`git`, `hg`, `pijul`, `fossil`, or `none`). See below.
+
+# Version control
+
+`--vcs` selects the version control system the new project is placed under, taking the same values as `cargo new`:
+
+```sh
+topcoat new my-app --vcs hg
+```
+
+With no `--vcs`, the command initializes a git repository, except when the project lands inside an existing git or Mercurial repository: a repository nested in another one would surprise, so none is created. Passing `--vcs` overrides that and initializes one regardless. `--vcs none` creates no repository at all.
+
+A system named with `--vcs` must be installed, and the command fails if its repository cannot be created. The default is best effort in comparison: on a machine without git, the project is still scaffolded, just without a repository.
 
 # Depending on a local topcoat
 
@@ -55,7 +67,7 @@ Every template writes:
 
 - `Cargo.toml`: the package manifest, with `topcoat` and `tokio` declared. `topcoat` is pinned to the version matching the CLI, and templates that need extra features (such as `tailwind`) enable them here.
 - `src/main.rs`: the application entry point and its pages.
-- `.gitignore`: ignores the Cargo `target/` directory.
 - `README.md`: a short pointer to the dev server.
+- an ignore file excluding the Cargo `target/` directory, in the form the chosen version control system reads: `.gitignore`, `.hgignore`, `.ignore` for Pijul, or `.fossil-settings/ignore-glob` and `.fossil-settings/clean-glob`. `--vcs none` writes none, since nothing would read it.
 
-The `tailwind` template additionally writes a `build.rs` that compiles the stylesheet.
+The `tailwind` template additionally writes a `build.rs` that compiles the stylesheet. It scopes the Tailwind class scan to `src` with `.cwd("src")`, so the build does not depend on an ignore file to keep Tailwind out of `target/`. Widen the scan if you add class names outside `src`; see the [Tailwind guide](../../topcoat/docs/tailwind.md).

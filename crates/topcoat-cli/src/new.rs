@@ -1,13 +1,14 @@
 mod template;
+mod vcs;
 
 use std::io::IsTerminal;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
 
 use clap::Args;
 use console::style;
 
 use template::{ScaffoldFile, Template, TopcoatSource};
+use vcs::VersionControl;
 
 #[derive(Args)]
 pub struct NewCommand {
@@ -26,9 +27,11 @@ pub struct NewCommand {
     /// workspace root containing `crates/topcoat`
     #[arg(long = "path", value_name = "DIR")]
     topcoat_path: Option<PathBuf>,
-    /// Do not initialize a git repository in the new project
-    #[arg(long)]
-    no_git: bool,
+    /// Initialize a repository for the given version control system, or `none`
+    /// for no repository. Defaults to `git`, or to `none` when the project
+    /// lands inside an existing repository
+    #[arg(long, value_name = "VCS")]
+    vcs: Option<VersionControl>,
 }
 
 impl NewCommand {
@@ -59,14 +62,57 @@ impl NewCommand {
             None => choose_template()?,
         };
 
+        // Resolved while the project directory still does not exist, since
+        // detecting an enclosing repository means asking about its parent.
+        let vcs = self.version_control();
+
         let source = self.topcoat_source()?;
-        let files = template.files(&name, &source);
+        let files = template.files(&name, &source, vcs);
+
+        // The repository is created before the files are written: `fossil
+        // open` refuses a checkout in a directory that is not empty.
+        std::fs::create_dir_all(&self.path)
+            .map_err(|error| format!("failed to create {}: {error}", self.path.display()))?;
+        let initialized = self.init_vcs(vcs).inspect_err(|_| {
+            // The destination was verified free above, so the directory just
+            // created is this command's to take back. `remove_dir` only
+            // succeeds on an empty one, which leaves a half-created repository
+            // in place to be looked at rather than deleted out from under the
+            // user. Reclaiming it is what lets the command be run again once
+            // the reported problem is fixed.
+            std::fs::remove_dir(&self.path).ok();
+        })?;
+
         write_files(&self.path, &files)?;
 
-        let git = !self.no_git && init_git(&self.path);
-
-        report(&name, template, &self.path, &files, git);
+        report(&name, template, &self.path, &files, initialized);
         Ok(())
+    }
+
+    /// The version control system to use: the requested one, otherwise `git`,
+    /// except inside an existing repository where a nested one would surprise.
+    fn version_control(&self) -> VersionControl {
+        self.vcs.unwrap_or({
+            if vcs::existing_repo(&self.path) {
+                VersionControl::None
+            } else {
+                VersionControl::Git
+            }
+        })
+    }
+
+    /// Create the repository, returning the system it was created for.
+    ///
+    /// A system named with `--vcs` must either work or say why it did not. A
+    /// defaulted `git` is best effort instead: scaffolding a project is still
+    /// worth doing on a machine with no git installed.
+    fn init_vcs(&self, vcs: VersionControl) -> Result<Option<VersionControl>, String> {
+        match vcs.init(&self.path) {
+            Ok(()) if vcs == VersionControl::None => Ok(None),
+            Ok(()) => Ok(Some(vcs)),
+            Err(error) if self.vcs.is_some() => Err(error),
+            Err(_) => Ok(None),
+        }
     }
 
     /// The package name: `--name` when given, otherwise the final component of
@@ -203,42 +249,14 @@ fn choose_template() -> Result<Template, String> {
     }
 }
 
-/// Initialize a git repository in `root`, unless git is unavailable or `root`
-/// already sits inside an existing repository (a nested repo would surprise).
-/// Returns whether a repository was created.
-fn init_git(root: &Path) -> bool {
-    if inside_git_repo(root) {
-        return false;
-    }
-
-    Command::new("git")
-        .arg("init")
-        .arg("--quiet")
-        .arg(root)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .is_ok_and(|status| status.success())
-}
-
-/// Whether the new project's location already lies within a git work tree.
-/// `root` does not exist yet, so its parent directory is queried.
-fn inside_git_repo(root: &Path) -> bool {
-    let dir = root
-        .parent()
-        .filter(|parent| !parent.as_os_str().is_empty())
-        .unwrap_or_else(|| Path::new("."));
-
-    Command::new("git")
-        .arg("-C")
-        .arg(dir)
-        .args(["rev-parse", "--is-inside-work-tree"])
-        .output()
-        .is_ok_and(|output| output.status.success() && output.stdout.starts_with(b"true"))
-}
-
 /// Print the created files and the commands to run next.
-fn report(name: &str, template: Template, path: &Path, files: &[ScaffoldFile], git: bool) {
+fn report(
+    name: &str,
+    template: Template,
+    path: &Path,
+    files: &[ScaffoldFile],
+    vcs: Option<VersionControl>,
+) {
     println!(
         "{} created {} {}",
         style("+").green(),
@@ -252,11 +270,11 @@ fn report(name: &str, template: Template, path: &Path, files: &[ScaffoldFile], g
             style(path.join(file.path).display()).dim(),
         );
     }
-    if git {
+    if let Some(vcs) = vcs {
         println!(
             "  {} {}",
             style("+").green().dim(),
-            style("initialized a git repository").dim(),
+            style(format!("initialized a {} repository", vcs.name())).dim(),
         );
     }
 
@@ -296,7 +314,7 @@ mod tests {
             name: name.map(str::to_string),
             template: None,
             topcoat_path: None,
-            no_git: true,
+            vcs: Some(VersionControl::None),
         }
     }
 

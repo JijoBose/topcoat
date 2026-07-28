@@ -1,5 +1,7 @@
 use clap::ValueEnum;
 
+use super::vcs::VersionControl;
+
 /// Placeholder substituted in the template sources with the package name. It is
 /// chosen to never occur in valid Rust, so a plain string replacement is
 /// unambiguous.
@@ -90,28 +92,37 @@ impl Template {
     }
 
     /// The files to write for a new project named `name`, depending on
-    /// `topcoat` from `source`.
-    pub(super) fn files(self, name: &str, source: &TopcoatSource) -> Vec<ScaffoldFile> {
+    /// `topcoat` from `source` and placed under `vcs`.
+    pub(super) fn files(
+        self,
+        name: &str,
+        source: &TopcoatSource,
+        vcs: VersionControl,
+    ) -> Vec<ScaffoldFile> {
         let fill = |template: &str| template.replace(NAME_PLACEHOLDER, name);
 
-        let mut files = vec![
-            ScaffoldFile {
-                path: "Cargo.toml",
-                contents: self.cargo_toml(name, source),
-            },
-            ScaffoldFile {
-                path: ".gitignore",
-                contents: GITIGNORE.to_string(),
-            },
-            ScaffoldFile {
-                path: "README.md",
-                contents: fill(README),
-            },
-            ScaffoldFile {
-                path: "src/main.rs",
-                contents: fill(self.main_rs()),
-            },
-        ];
+        let mut files = vec![ScaffoldFile {
+            path: "Cargo.toml",
+            contents: self.cargo_toml(name, source),
+        }];
+
+        files.extend(
+            vcs.ignore_files()
+                .iter()
+                .map(|&(path, contents)| ScaffoldFile {
+                    path,
+                    contents: contents.to_string(),
+                }),
+        );
+
+        files.push(ScaffoldFile {
+            path: "README.md",
+            contents: fill(README),
+        });
+        files.push(ScaffoldFile {
+            path: "src/main.rs",
+            contents: fill(self.main_rs()),
+        });
 
         if let Template::Tailwind = self {
             files.push(ScaffoldFile {
@@ -162,8 +173,6 @@ impl Template {
     }
 }
 
-const GITIGNORE: &str = "/target\n";
-
 const README: &str = "\
 # __PROJECT_NAME__
 
@@ -184,7 +193,13 @@ sources and rebuilds, rebundles, and reloads on every change.
 
 const BUILD_RS: &str = "\
 fn main() {
-    topcoat::tailwind::BuildConfig::new().render().unwrap();
+    // Tailwind scans `src` for class names. Scanning the package root instead
+    // would rely on an ignore file to stay out of `target`, which not every
+    // version control system leaves behind.
+    topcoat::tailwind::BuildConfig::new()
+        .cwd(\"src\")
+        .render()
+        .unwrap();
 }
 ";
 
@@ -388,7 +403,7 @@ mod tests {
     #[test]
     fn every_template_generates_valid_sources() {
         for &template in Template::ALL {
-            let files = template.files("my-app", &version());
+            let files = template.files("my-app", &version(), VersionControl::Git);
 
             // The manifest is valid TOML naming the requested package and
             // pinning the requested topcoat version.
@@ -414,10 +429,54 @@ mod tests {
     }
 
     #[test]
+    fn the_ignore_files_follow_the_version_control_system() {
+        for &template in Template::ALL {
+            // `none` writes no ignore file, so it is the project without any:
+            // everything a system adds on top of it is an ignore file of its
+            // own, and nothing else about the project may change.
+            let bare = template.files("my-app", &version(), VersionControl::None);
+            let bare_paths: Vec<_> = bare.iter().map(|file| file.path).collect();
+
+            for &vcs in VersionControl::value_variants() {
+                let files = template.files("my-app", &version(), vcs);
+                let added: Vec<_> = files
+                    .iter()
+                    .filter(|file| !bare_paths.contains(&file.path))
+                    .map(|file| (file.path, file.contents.as_str()))
+                    .collect();
+
+                assert_eq!(
+                    added,
+                    vcs.ignore_files().to_vec(),
+                    "{} under {}",
+                    template.name(),
+                    vcs.name()
+                );
+                assert_eq!(
+                    files.len(),
+                    bare.len() + added.len(),
+                    "{} under {} drops nothing",
+                    template.name(),
+                    vcs.name()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn the_tailwind_build_script_does_not_depend_on_an_ignore_file() {
+        // Scanning the package root would need an ignore file to keep Tailwind
+        // out of `target`, and `--vcs none` writes none.
+        let files = Template::Tailwind.files("my-app", &version(), VersionControl::None);
+        let build = file(&files, "build.rs");
+        assert!(build.contents.contains(".cwd(\"src\")"));
+    }
+
+    #[test]
     fn path_source_produces_a_valid_path_manifest() {
         for &template in Template::ALL {
             let source = TopcoatSource::Path("/home/dev/topcoat/crates/topcoat".to_string());
-            let files = template.files("app", &source);
+            let files = template.files("app", &source, VersionControl::Git);
             let manifest = &file(&files, "Cargo.toml").contents;
 
             let parsed: toml::Table = toml::from_str(manifest).expect("valid TOML");
@@ -438,7 +497,7 @@ mod tests {
     #[test]
     fn only_tailwind_has_a_build_script() {
         for &template in Template::ALL {
-            let files = template.files("app", &version());
+            let files = template.files("app", &version(), VersionControl::Git);
             let build = files.iter().find(|f| f.path == "build.rs");
             match template {
                 Template::Tailwind => {
@@ -454,7 +513,7 @@ mod tests {
 
     #[test]
     fn tailwind_manifest_enables_the_feature() {
-        let files = Template::Tailwind.files("app", &version());
+        let files = Template::Tailwind.files("app", &version(), VersionControl::Git);
         let manifest = &file(&files, "Cargo.toml").contents;
         assert!(manifest.contains("features = [\"tailwind\"]"));
         assert!(manifest.contains("[build-dependencies]"));
