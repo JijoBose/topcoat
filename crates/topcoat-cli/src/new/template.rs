@@ -27,12 +27,12 @@ impl TopcoatSource {
             && features.is_empty()
             && default_features
         {
-            return format!("\"{version}\"");
+            return format!(r#""{version}""#);
         }
 
         let mut parts = vec![match self {
-            TopcoatSource::Version(version) => format!("version = \"{version}\""),
-            TopcoatSource::Path(path) => format!("path = \"{path}\""),
+            TopcoatSource::Version(version) => format!(r#"version = "{version}""#),
+            TopcoatSource::Path(path) => format!(r#"path = "{path}""#),
         }];
         if !default_features {
             parts.push("default-features = false".to_string());
@@ -40,7 +40,7 @@ impl TopcoatSource {
         if !features.is_empty() {
             let list = features
                 .iter()
-                .map(|feature| format!("\"{feature}\""))
+                .map(|feature| format!(r#""{feature}""#))
                 .collect::<Vec<_>>()
                 .join(", ");
             parts.push(format!("features = [{list}]"));
@@ -152,15 +152,15 @@ impl Template {
         };
 
         format!(
-            "[package]\n\
-             name = \"{name}\"\n\
-             version = \"0.1.0\"\n\
-             edition = \"2024\"\n\
-             \n\
-             [dependencies]\n\
-             tokio = {{ version = \"1\", features = [\"rt-multi-thread\", \"macros\"] }}\n\
-             topcoat = {dep}\n\
-             {build_section}"
+            r#"[package]
+name = "{name}"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio = {{ version = "1", features = ["rt-multi-thread", "macros"] }}
+topcoat = {dep}
+{build_section}"#
         )
     }
 
@@ -173,8 +173,7 @@ impl Template {
     }
 }
 
-const README: &str = "\
-# __PROJECT_NAME__
+const README: &str = r"# __PROJECT_NAME__
 
 A web app built with [Topcoat](https://github.com/tokio-rs/topcoat).
 
@@ -191,20 +190,18 @@ Open <http://127.0.0.1:3000> to view the app. The dev server watches your
 sources and rebuilds, rebundles, and reloads on every change.
 ";
 
-const BUILD_RS: &str = "\
-fn main() {
+const BUILD_RS: &str = r#"fn main() {
     // Tailwind scans `src` for class names. Scanning the package root instead
     // would rely on an ignore file to stay out of `target`, which not every
     // version control system leaves behind.
     topcoat::tailwind::BuildConfig::new()
-        .cwd(\"src\")
+        .cwd("src")
         .render()
         .unwrap();
 }
-";
+"#;
 
-const MAIN_MINIMAL: &str = "\
-use topcoat::{
+const MAIN_MINIMAL: &str = r#"use topcoat::{
     Result,
     router::{Router, RouterBuilderDiscoverExt, page},
     view::{component, view},
@@ -217,16 +214,16 @@ async fn main() {
         .unwrap();
 }
 
-#[page(\"/\")]
+#[page("/")]
 async fn home() -> Result {
     view! {
         <!DOCTYPE html>
         <html>
             <head>
-                <title>\"__PROJECT_NAME__\"</title>
+                <title>"__PROJECT_NAME__"</title>
                 topcoat::dev::script()
             </head>
-            <body>hello(name: \"World\")</body>
+            <body>hello(name: "World")</body>
         </html>
     }
 }
@@ -235,16 +232,15 @@ async fn home() -> Result {
 async fn hello(name: &str) -> Result {
     view! {
         <h1>
-            \"Hello, \"
+            "Hello, "
             (name)
-            \"!\"
+            "!"
         </h1>
     }
 }
-";
+"#;
 
-const MAIN_TAILWIND: &str = "\
-use topcoat::{
+const MAIN_TAILWIND: &str = r#"use topcoat::{
     Result,
     asset::{AssetBundle, RouterBuilderAssetExt},
     router::{Router, layout, page},
@@ -263,18 +259,18 @@ async fn main() {
     topcoat::start(router).await.unwrap();
 }
 
-#[layout(\"/\")]
+#[layout("/")]
 async fn root_layout(slot: Result) -> Result {
     view! {
         <!DOCTYPE html>
         <html>
             <head>
-                <title>\"__PROJECT_NAME__\"</title>
+                <title>"__PROJECT_NAME__"</title>
                 topcoat::dev::script()
-                <link rel=\"stylesheet\" href=(tailwind::stylesheet!())>
+                <link rel="stylesheet" href=(tailwind::stylesheet!())>
             </head>
             <body
-                class=\"flex min-h-screen items-center justify-center bg-slate-100 font-sans\"
+                class="flex min-h-screen items-center justify-center bg-slate-100 font-sans"
             >
                 (slot?)
             </body>
@@ -282,32 +278,31 @@ async fn root_layout(slot: Result) -> Result {
     }
 }
 
-#[page(\"/\")]
+#[page("/")]
 async fn home() -> Result {
     view! {
         <main
-            class=\"mx-4 w-full max-w-md rounded-2xl bg-white p-8 shadow-lg ring-1 ring-slate-200\"
+            class="mx-4 w-full max-w-md rounded-2xl bg-white p-8 shadow-lg ring-1 ring-slate-200"
         >
-            <h1 class=\"text-2xl font-bold tracking-tight text-slate-900\">
-                \"__PROJECT_NAME__\"
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900">
+                "__PROJECT_NAME__"
             </h1>
-            <p class=\"mt-2 text-slate-600\">
-                \"Utility classes in your Rust sources are compiled into this \\
-                 page's stylesheet by the standalone Tailwind CLI.\"
+            <p class="mt-2 text-slate-600">
+                "Utility classes in your Rust sources are compiled into this \
+                 page's stylesheet by the standalone Tailwind CLI."
             </p>
             <a
-                href=\"https://tailwindcss.com/docs\"
-                class=\"mt-6 inline-block rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white shadow-sm hover:bg-blue-500\"
+                href="https://tailwindcss.com/docs"
+                class="mt-6 inline-block rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white shadow-sm hover:bg-blue-500"
             >
-                \"Read the Tailwind docs\"
+                "Read the Tailwind docs"
             </a>
         </main>
     }
 }
-";
+"#;
 
-const MAIN_RUNTIME: &str = "\
-use topcoat::{
+const MAIN_RUNTIME: &str = r#"use topcoat::{
     Result,
     asset::{AssetBundle, RouterBuilderAssetExt},
     router::{Router, RouterBuilderDiscoverExt, layout, page},
@@ -327,13 +322,13 @@ async fn main() {
     topcoat::start(router).await.unwrap();
 }
 
-#[layout(\"/\")]
+#[layout("/")]
 async fn root_layout(slot: Result) -> Result {
     view! {
         <!DOCTYPE html>
         <html>
             <head>
-                <title>\"__PROJECT_NAME__\"</title>
+                <title>"__PROJECT_NAME__"</title>
                 topcoat::dev::script()
                 topcoat::runtime::script()
             </head>
@@ -342,13 +337,13 @@ async fn root_layout(slot: Result) -> Result {
     }
 }
 
-#[page(\"/\")]
+#[page("/")]
 async fn home() -> Result {
     view! {
         signal count = 0.0;
 
-        <button @click=$(|_e| count.set(count.get() + 1.0))>\"increment\"</button>
-        <button @click=$(|_e| count.set(count.get() - 1.0))>\"decrement\"</button>
+        <button @click=$(|_e| count.set(count.get() + 1.0))>"increment"</button>
+        <button @click=$(|_e| count.set(count.get() - 1.0))>"decrement"</button>
 
         <br>
         <br>
@@ -356,7 +351,7 @@ async fn home() -> Result {
         $(count.get())
     }
 }
-";
+"#;
 
 #[cfg(test)]
 mod tests {
@@ -376,14 +371,14 @@ mod tests {
     #[test]
     fn crates_io_dependency_rendering() {
         let source = version();
-        assert_eq!(source.dependency(&[], true), "\"0.4.0\"");
+        assert_eq!(source.dependency(&[], true), r#""0.4.0""#);
         assert_eq!(
             source.dependency(&["tailwind"], true),
-            "{ version = \"0.4.0\", features = [\"tailwind\"] }"
+            r#"{ version = "0.4.0", features = ["tailwind"] }"#
         );
         assert_eq!(
             source.dependency(&["tailwind"], false),
-            "{ version = \"0.4.0\", default-features = false, features = [\"tailwind\"] }"
+            r#"{ version = "0.4.0", default-features = false, features = ["tailwind"] }"#
         );
     }
 
@@ -392,11 +387,11 @@ mod tests {
         let source = TopcoatSource::Path("/abs/crates/topcoat".to_string());
         assert_eq!(
             source.dependency(&[], true),
-            "{ path = \"/abs/crates/topcoat\" }"
+            r#"{ path = "/abs/crates/topcoat" }"#
         );
         assert_eq!(
             source.dependency(&["tailwind"], false),
-            "{ path = \"/abs/crates/topcoat\", default-features = false, features = [\"tailwind\"] }"
+            r#"{ path = "/abs/crates/topcoat", default-features = false, features = ["tailwind"] }"#
         );
     }
 
@@ -425,6 +420,26 @@ mod tests {
             // The common files are always present.
             file(&files, ".gitignore");
             file(&files, "README.md");
+        }
+    }
+
+    #[test]
+    fn no_generated_source_carries_a_doubled_backslash() {
+        // The templates are raw strings, which perform no escape processing, so
+        // a backslash written twice reaches the generated file as two
+        // characters. `MAIN_TAILWIND` ends a line with one to continue a string
+        // literal; doubled, the generated file still parses and still compiles,
+        // just with a stray backslash in the rendered text. Nothing else here
+        // would notice.
+        for &template in Template::ALL {
+            for file in template.files("my-app", &version(), VersionControl::Git) {
+                assert!(
+                    !file.contents.contains(r"\\"),
+                    "{} in the {} template",
+                    file.path,
+                    template.name()
+                );
+            }
         }
     }
 
@@ -469,7 +484,7 @@ mod tests {
         // out of `target`, and `--vcs none` writes none.
         let files = Template::Tailwind.files("my-app", &version(), VersionControl::None);
         let build = file(&files, "build.rs");
-        assert!(build.contents.contains(".cwd(\"src\")"));
+        assert!(build.contents.contains(r#".cwd("src")"#));
     }
 
     #[test]
@@ -515,7 +530,7 @@ mod tests {
     fn tailwind_manifest_enables_the_feature() {
         let files = Template::Tailwind.files("app", &version(), VersionControl::Git);
         let manifest = &file(&files, "Cargo.toml").contents;
-        assert!(manifest.contains("features = [\"tailwind\"]"));
+        assert!(manifest.contains(r#"features = ["tailwind"]"#));
         assert!(manifest.contains("[build-dependencies]"));
         assert!(manifest.contains("default-features = false"));
     }

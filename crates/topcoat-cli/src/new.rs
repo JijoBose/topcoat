@@ -170,7 +170,7 @@ fn is_topcoat_crate(dir: &Path) -> bool {
     std::fs::read_to_string(dir.join("Cargo.toml")).is_ok_and(|manifest| {
         manifest
             .lines()
-            .any(|line| line.trim() == "name = \"topcoat\"")
+            .any(|line| line.trim() == r#"name = "topcoat""#)
     })
 }
 
@@ -342,7 +342,9 @@ mod tests {
         std::fs::create_dir_all(&crate_dir).unwrap();
         std::fs::write(
             crate_dir.join("Cargo.toml"),
-            "[package]\nname = \"topcoat\"\n",
+            r#"[package]
+name = "topcoat"
+"#,
         )
         .unwrap();
 
@@ -354,7 +356,9 @@ mod tests {
         // A sibling crate (`topcoat-router`) must not be mistaken for the facade.
         std::fs::write(
             crate_dir.join("Cargo.toml"),
-            "[package]\nname = \"topcoat-router\"\n",
+            r#"[package]
+name = "topcoat-router"
+"#,
         )
         .unwrap();
         assert!(!is_topcoat_crate(&crate_dir));
