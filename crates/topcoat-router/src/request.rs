@@ -26,7 +26,7 @@ pub type Request<T = Body> = http::Request<T>;
 ///
 /// An implementation that buffers the body should delegate the buffering to
 /// [`Bytes`], which enforces the request's
-/// [`body_limit`](crate::body_limit); reading the body by hand bypasses that
+/// [`body_limit`]; reading the body by hand bypasses that
 /// limit.
 ///
 /// # Examples
@@ -81,7 +81,7 @@ pub type Request<T = Body> = http::Request<T>;
 pub trait FromRequest: Sized {
     /// Builds `Self` from the request context and body.
     ///
-    /// Returns an error (typically [`bad_request`](crate::error::bad_request))
+    /// Returns an error (typically [`bad_request`])
     /// when the request cannot be parsed into `Self`; the error is converted
     /// into the response sent to the client.
     fn from_request(cx: &Cx, body: Body) -> impl Future<Output = Result<Self>> + Send;
