@@ -18,7 +18,7 @@ Small, focused pull requests are much easier to accept than large ones. If a cha
 
 Topcoat is a plain Cargo workspace. The framework crates live in `crates/`, runnable example apps in `examples/`.
 
-A stable toolchain is enough to build and test everything. `rust-toolchain.toml` pins stable, and a nightly toolchain is useful for the formatter and the doc check:
+A stable toolchain is enough to build and test everything. `rust-toolchain.toml` pins stable, and a nightly toolchain is required for the formatter and the doc check:
 
 ```sh
 git clone https://github.com/tokio-rs/topcoat
@@ -51,7 +51,7 @@ Pull requests are squash-merged, so you do not need to tidy up your commit histo
 Run this before every pull request. It mirrors what CI does, so it saves you a round-trip:
 
 ```sh
-cargo +nightly fmt --all # stable fmt works too, it just skips comment wrapping
+cargo +nightly fmt --all # nightly is required, CI checks formatting with it
 cargo topcoat fmt # formats Topcoat macro bodies inside source files
 cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 cargo test --workspace --all-features
