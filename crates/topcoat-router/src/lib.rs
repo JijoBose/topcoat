@@ -22,8 +22,6 @@ mod response;
 mod route;
 mod router;
 #[cfg(feature = "serve")]
-mod serve;
-#[cfg(feature = "serve")]
 mod service;
 #[cfg(feature = "tower")]
 pub mod tower;
@@ -47,8 +45,6 @@ pub use request::*;
 pub use response::*;
 pub use route::*;
 pub use router::*;
-#[cfg(feature = "serve")]
-pub use serve::*;
 #[cfg(feature = "serve")]
 pub use service::*;
 
