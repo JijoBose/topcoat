@@ -13,8 +13,9 @@ use topcoat_core::{
 };
 
 use crate::{
-    Body, FromRequest, OptionalFromRequest, body_limit, content_type,
+    Body, body_limit,
     error::{bad_request, content_too_large, internal_server_error},
+    request::{FromRequest, OptionalFromRequest, content_type},
 };
 
 /// `multipart/form-data` request extractor, commonly used for file uploads.
@@ -247,9 +248,10 @@ mod tests {
 
     use super::*;
     use crate::{
-        Body, FromRequest, OptionalFromRequest,
+        Body,
         body_limit::DEFAULT_BODY_LIMIT,
         error::{BadRequestError, ContentTooLargeError},
+        request::{FromRequest, OptionalFromRequest},
     };
 
     const BOUNDARY: &str = "X-TOPCOAT-BOUNDARY";

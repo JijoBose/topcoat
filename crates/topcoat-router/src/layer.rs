@@ -5,8 +5,9 @@ use std::pin::Pin;
 use topcoat_core::{context::CxBuilder, error::Result};
 
 use crate::{
-    Body, Endpoint, Path, Response, Route,
+    Body, Endpoint, Path, Route,
     error::{method_not_allowed, not_found},
+    response::Response,
 };
 
 /// The future returned by [`Layer::handle`] and [`Next::run`]: a boxed, `Send`
@@ -241,7 +242,10 @@ mod tests {
     use topcoat_core::context::{ContextMap, Cx, CxBuilder, app_context};
 
     use super::*;
-    use crate::{Bytes, IntoResponse, Method, RouteFn, RouteFuture, error::respond, to_bytes};
+    use crate::{
+        Method, RouteFn, RouteFuture, error::respond, request::Bytes, response::IntoResponse,
+        to_bytes,
+    };
 
     // -- Test helpers --
 

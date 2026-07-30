@@ -140,7 +140,7 @@ impl ToTokens for Shard {
                         type __Surrogate =
                             <(#(#value_tys,)*) as #topcoat_runtime::Surrogated>::Surrogate;
                         let #topcoat_router::content::Json(__args) =
-                            <#topcoat_router::content::Json<__Surrogate> as #topcoat_router::FromRequest>
+                            <#topcoat_router::content::Json<__Surrogate> as #topcoat_router::request::FromRequest>
                                 ::from_request(cx, body).await?;
                         let (#(#value_idents,)*) =
                             #topcoat_runtime::Surrogate::into_real(__args);

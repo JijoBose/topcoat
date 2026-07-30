@@ -13,8 +13,10 @@ use topcoat_core::error::{Error, Result};
 use tower::ServiceExt;
 
 use crate::{
-    Body, BoxError, IntoPath, Layer, LayerFuture, Methods, Next, OwnedMethods, Path, Request,
-    Response, Route, RouteFuture, parts,
+    Body, BoxError, IntoPath, Layer, LayerFuture, Methods, Next, OwnedMethods, Path, Route,
+    RouteFuture,
+    request::{Request, parts},
+    response::Response,
 };
 
 /// A [`Route`] that forwards its requests to a tower service.
@@ -44,7 +46,9 @@ use crate::{
 /// ```rust
 /// use std::convert::Infallible;
 ///
-/// use topcoat::router::{Body, Methods, Request, Response, Router, tower::TowerRoute};
+/// use topcoat::router::{
+///     Body, Methods, Router, request::Request, response::Response, tower::TowerRoute,
+/// };
 /// use tower::service_fn;
 ///
 /// // Stands in for a legacy tower application, like an axum router.
@@ -477,8 +481,8 @@ mod tests {
 
     use super::*;
     use crate::{
-        Bytes, IntoResponse, Layers, Method, RouteFn, RouteFuture, Router, Terminal,
-        error::NotFoundError, to_bytes,
+        Layers, Method, RouteFn, RouteFuture, Router, Terminal, error::NotFoundError,
+        request::Bytes, response::IntoResponse, to_bytes,
     };
 
     // -- Test helpers --
@@ -528,7 +532,7 @@ mod tests {
     /// edits made by middleware.
     fn echo_header(cx: &Cx, _body: Body) -> RouteFuture<'_> {
         Box::pin(async move {
-            let value = crate::headers(cx)
+            let value = crate::request::headers(cx)
                 .get("x-tower")
                 .and_then(|value| value.to_str().ok())
                 .unwrap_or("missing")

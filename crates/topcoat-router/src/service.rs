@@ -10,7 +10,7 @@ use hyper_util::rt::{TokioExecutor, TokioIo};
 use hyper_util::server::conn::auto;
 use tokio::sync::watch;
 
-use crate::{Body, Listener, Request, Response, Router};
+use crate::{Body, Listener, Router, request::Request, response::Response};
 
 /// A [`Router`] together with the configuration it is served with.
 ///
@@ -197,8 +197,9 @@ mod tests {
 
     use super::*;
     use crate::{
-        Body, Bytes, IntoResponse, Method, Path, Response, RouteFn, RouteFuture, RouteHandlerFn,
-        Router,
+        Body, Method, Path, RouteFn, RouteFuture, RouteHandlerFn, Router,
+        request::Bytes,
+        response::{IntoResponse, Response},
     };
 
     /// Builds a router with `handler` registered under `GET /x`.

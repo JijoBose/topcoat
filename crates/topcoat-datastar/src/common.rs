@@ -4,8 +4,8 @@ use futures_util::stream;
 use memchr::memchr2;
 use topcoat_core::{context::Cx, error::Result};
 use topcoat_router::{
-    IntoResponse, Response,
     content::sse::{Event, Sse},
+    response::{IntoResponse, Response},
 };
 
 pub(crate) const PATCH_ELEMENTS_EVENT: &str = "datastar-patch-elements";

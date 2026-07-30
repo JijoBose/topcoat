@@ -2,7 +2,8 @@ use topcoat_core::context::{Cx, CxBuilder};
 use topcoat_router::{
     Body, Layer, LayerFuture, Method, Next, Path,
     error::{ForbiddenError, forbidden},
-    header, headers, method, uri,
+    header,
+    request::{headers, method, uri},
 };
 
 use crate::config;

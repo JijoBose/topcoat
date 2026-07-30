@@ -4,7 +4,9 @@ use std::pin::Pin;
 use topcoat_core::{context::Cx, error::Result};
 use topcoat_view::View;
 
-use crate::{Body, IntoPath, IntoResponse, Methods, OwnedMethods, Path, Route, RouteFuture};
+use crate::{
+    Body, IntoPath, Methods, OwnedMethods, Path, Route, RouteFuture, response::IntoResponse,
+};
 
 /// The async render function backing a [`PageFn`].
 pub type PageRenderFn = for<'cx> fn(

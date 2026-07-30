@@ -73,7 +73,7 @@ A layer wraps request handling under its path prefix. It receives a mutable requ
 use topcoat::{
     Result,
     context::CxBuilder,
-    router::{Body, Next, Response, layer},
+    router::{Body, Next, layer, response::Response},
 };
 
 #[layer("/")]
@@ -259,7 +259,7 @@ See the [`view!`](crate::view::view!) macro docs for the full placement and prec
 Build a router by chaining `.page()`, `.layout()`, `.layer()`, and `.route()`, then calling [`build`](RouterBuilder::build):
 
 ```rust
-# use topcoat::{Result, context::CxBuilder, router::{Body, Next, Response, layer, layout, page, route}, view::view};
+# use topcoat::{Result, context::CxBuilder, router::{Body, Next, layer, layout, page, response::Response, route}, view::view};
 # #[layout("/")] async fn root_layout(slot: Result) -> Result { view! { (slot?) } }
 # #[layout("/settings")] async fn settings_layout(slot: Result) -> Result { view! { (slot?) } }
 # #[layer("/")] async fn timing(cx: &mut CxBuilder, body: Body, next: Next<'_>) -> Result<Response> { next.run(cx, body).await }
@@ -344,7 +344,7 @@ With the `tower` feature enabled, the [`tower`](mod@tower) module bridges the to
 use topcoat::{
     Result,
     context::CxBuilder,
-    router::{Body, Next, Response, Router, content::Json, layer, layout, page, route},
+    router::{Body, Next, Router, content::Json, layer, layout, page, response::Response, route},
     view::view,
 };
 

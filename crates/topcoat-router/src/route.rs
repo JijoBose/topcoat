@@ -2,7 +2,7 @@ use std::{borrow::Cow, pin::Pin};
 
 use topcoat_core::{context::Cx, error::Result};
 
-use crate::{Body, IntoPath, Methods, OwnedMethods, Path, Response};
+use crate::{Body, IntoPath, Methods, OwnedMethods, Path, response::Response};
 
 /// The future returned by [`Route::handle`]: a boxed, `Send` future borrowing
 /// the route and its request context.

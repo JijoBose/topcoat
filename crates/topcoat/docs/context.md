@@ -4,12 +4,12 @@ Add `cx: &Cx` to the function signature when needed; leave it out when the funct
 
 # Router request helpers
 
-The [`router`](crate::router) module exposes small functions for reading HTTP request data from `cx`.
+The [`router::request`](crate::router::request) module exposes small functions for reading HTTP request data from `cx`.
 
 ```rust
 use topcoat::{
     context::Cx,
-    router::{headers, method, uri},
+    router::request::{headers, method, uri},
 };
 
 fn request_summary(cx: &Cx) -> String {
@@ -22,20 +22,20 @@ fn request_summary(cx: &Cx) -> String {
 }
 ```
 
-The ones you reach for most, all listed in [`topcoat::router`](crate::router):
+The ones you reach for most, all listed in [`topcoat::router::request`](crate::router::request):
 
-- [`parts(cx)`](crate::router::parts) returns the current request's `http::request::Parts`.
-- [`method(cx)`](crate::router::method) returns the HTTP method.
-- [`uri(cx)`](crate::router::uri) returns the request URI.
-- [`version(cx)`](crate::router::version) returns the HTTP version.
-- [`headers(cx)`](crate::router::headers) returns the request headers.
-- [`content_type(cx)`](crate::router::content_type) returns the request `Content-Type`.
-- [`extensions(cx)`](crate::router::extensions) returns request extensions.
+- [`parts(cx)`](crate::router::request::parts) returns the current request's `http::request::Parts`.
+- [`method(cx)`](crate::router::request::method) returns the HTTP method.
+- [`uri(cx)`](crate::router::request::uri) returns the request URI.
+- [`version(cx)`](crate::router::request::version) returns the HTTP version.
+- [`headers(cx)`](crate::router::request::headers) returns the request headers.
+- [`content_type(cx)`](crate::router::request::content_type) returns the request `Content-Type`.
+- [`extensions(cx)`](crate::router::request::extensions) returns request extensions.
 
-Use [`parts(cx)`](crate::router::parts) when you need several fields at once:
+Use [`parts(cx)`](crate::router::request::parts) when you need several fields at once:
 
 ```rust
-use topcoat::{context::Cx, router::parts};
+use topcoat::{context::Cx, router::request::parts};
 
 fn cache_key(cx: &Cx) -> String {
     let parts = parts(cx);
@@ -43,10 +43,10 @@ fn cache_key(cx: &Cx) -> String {
 }
 ```
 
-Use [`extensions(cx)`](crate::router::extensions) for typed request values attached by a lower-level request layer or service integration:
+Use [`extensions(cx)`](crate::router::request::extensions) for typed request values attached by a lower-level request layer or service integration:
 
 ```rust
-use topcoat::{context::Cx, router::extensions};
+use topcoat::{context::Cx, router::request::extensions};
 
 struct RequestId(String);
 
@@ -133,7 +133,7 @@ Any helper can accept `cx: &`[`Cx`], call other helpers, and return a domain-spe
 ```rust
 use topcoat::{
     context::Cx,
-    router::{headers, uri},
+    router::request::{headers, uri},
 };
 
 fn locale(cx: &Cx) -> &str {

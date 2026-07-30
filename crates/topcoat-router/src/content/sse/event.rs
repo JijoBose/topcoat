@@ -8,7 +8,7 @@ use topcoat_core::{
     error::{Error, Result},
 };
 
-use crate::headers;
+use crate::request::headers;
 
 /// A server-sent event, assembled field by field.
 ///

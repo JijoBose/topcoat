@@ -39,7 +39,7 @@ const APPLICATION_OCTET_STREAM: HeaderValue = HeaderValue::from_static("applicat
 /// use topcoat::{
 ///     Result,
 ///     context::Cx,
-///     router::{Body, IntoResponse, Response, route},
+///     router::{Body, response::{IntoResponse, Response}, route},
 /// };
 ///
 /// struct Csv(String);

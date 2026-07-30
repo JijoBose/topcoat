@@ -20,7 +20,10 @@ pub use unauthorized::*;
 
 use http::StatusCode;
 
-use crate::{Body, IntoResponse, Response};
+use crate::{
+    Body,
+    response::{IntoResponse, Response},
+};
 use topcoat_core::context::Cx;
 use topcoat_core::error::{Error, Result};
 

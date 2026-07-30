@@ -3,7 +3,7 @@ use http::response::Parts;
 use serde::Serialize;
 use serde_json::Value;
 use topcoat_core::{context::Cx, error::Result};
-use topcoat_router::IntoResponseParts;
+use topcoat_router::response::IntoResponseParts;
 
 use crate::{ElementPatchMode, common, header};
 

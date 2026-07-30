@@ -137,7 +137,7 @@ impl ToTokens for Page {
         let parse_request = args.request().map(|request_ty| {
             let request_ident = request_ident();
             quote! {
-                let #request_ident = <#request_ty as #topcoat_router::FromRequest>::from_request(cx, body).await?;
+                let #request_ident = <#request_ty as #topcoat_router::request::FromRequest>::from_request(cx, body).await?;
             }
         });
         let call_args = args.call_args();

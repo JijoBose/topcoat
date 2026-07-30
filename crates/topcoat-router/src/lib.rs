@@ -5,7 +5,6 @@ mod body_limit;
 #[cfg(feature = "compression")]
 mod compression;
 pub mod content;
-mod context;
 mod endpoint;
 pub mod error;
 mod layer;
@@ -17,8 +16,8 @@ mod page;
 mod path;
 mod path_param;
 mod query_param;
-mod request;
-mod response;
+pub mod request;
+pub mod response;
 mod route;
 mod router;
 #[cfg(feature = "serve")]
@@ -30,7 +29,6 @@ pub use body::*;
 pub use body_limit::*;
 #[cfg(feature = "compression")]
 pub use compression::*;
-pub use context::*;
 pub(crate) use endpoint::Endpoint;
 pub use layer::*;
 #[cfg(feature = "serve")]
@@ -41,8 +39,6 @@ pub use page::*;
 pub use path::*;
 pub use path_param::*;
 pub use query_param::*;
-pub use request::*;
-pub use response::*;
 pub use route::*;
 pub use router::*;
 #[cfg(feature = "serve")]

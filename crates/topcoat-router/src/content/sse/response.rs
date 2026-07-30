@@ -12,7 +12,10 @@ use topcoat_core::{
 };
 
 use crate::content::sse::{Event, KeepAlive, KeepAliveTimer};
-use crate::{Body, BoxError, IntoResponse, Response};
+use crate::{
+    Body, BoxError,
+    response::{IntoResponse, Response},
+};
 
 /// Server-sent events response: streams [`Event`]s to the client over a
 /// long-lived connection.

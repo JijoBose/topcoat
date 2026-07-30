@@ -118,7 +118,7 @@ A layer uses its module path as a prefix:
 use topcoat::{
     Result,
     context::CxBuilder,
-    router::{Body, Next, Response, layer},
+    router::{Body, Next, layer, response::Response},
 };
 
 #[layer]

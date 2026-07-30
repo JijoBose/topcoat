@@ -2,7 +2,7 @@ use http::header::LOCATION;
 use http::{HeaderValue, StatusCode};
 use topcoat_core::{context::Cx, error::Result};
 
-use crate::{IntoResponse, Response};
+use crate::response::{IntoResponse, Response};
 
 /// Builds a temporary (HTTP 307) redirect to `uri`.
 ///

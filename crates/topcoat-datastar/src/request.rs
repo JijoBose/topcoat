@@ -1,5 +1,5 @@
 use topcoat_core::context::Cx;
-use topcoat_router::headers;
+use topcoat_router::request::headers;
 
 use crate::header;
 

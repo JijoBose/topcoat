@@ -14,8 +14,10 @@ use topcoat_core::context::{ContextMap, CxBuilder};
 use crate::RawPathParamSpec;
 use crate::{
     Endpoint, Layer, LayerId, Layers, LayoutFn, Methods, Next, PageFn, PageWithLayouts,
-    PathSegment, RawPathParams, Request, Response, Route, Terminal,
+    PathSegment, RawPathParams, Route, Terminal,
     error::{internal_server_response, respond},
+    request::Request,
+    response::Response,
 };
 
 /// A finalized Topcoat routing table.
@@ -621,8 +623,8 @@ mod tests {
 
     use super::*;
     use crate::{
-        Body, Bytes, IntoResponse, LayerFn, LayerFuture, Method, Path, RouteFn, RouteFuture,
-        to_bytes,
+        Body, LayerFn, LayerFuture, Method, Path, RouteFn, RouteFuture, request::Bytes,
+        response::IntoResponse, to_bytes,
     };
 
     // -- Test helpers --

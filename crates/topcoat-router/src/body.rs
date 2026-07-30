@@ -150,7 +150,7 @@ impl futures_core::Stream for BodyDataStream {
 /// the body exceeds `limit` bytes, and a
 /// [`BadRequestError`](crate::error::BadRequestError) when reading it fails.
 /// Both render themselves as a response, so a
-/// [`FromRequest`](crate::FromRequest) implementation can propagate them with
+/// [`FromRequest`](crate::request::FromRequest) implementation can propagate them with
 /// `?` rather than mapping them by hand.
 pub async fn to_bytes(body: Body, limit: usize) -> Result<Bytes> {
     let collected = if limit == usize::MAX {

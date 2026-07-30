@@ -12,7 +12,9 @@ use topcoat_core::error::{Error, Result};
 
 use crate::content::websocket::WebSocket;
 use crate::error::{bad_request, method_not_allowed};
-use crate::{Body, FromRequest, Response, extensions, headers, method};
+use crate::request::{FromRequest, extensions, headers, method};
+use crate::response::Response;
+use crate::Body;
 
 /// WebSocket handshake extractor: validates the upgrade request and hands the
 /// connection to a callback.
@@ -33,8 +35,8 @@ use crate::{Body, FromRequest, Response, extensions, headers, method};
 /// use topcoat::{
 ///     Result,
 ///     router::{
-///         Response,
 ///         content::websocket::{Message, WebSocketUpgrade},
+///         response::Response,
 ///         route,
 ///     },
 /// };

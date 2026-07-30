@@ -3,7 +3,7 @@ use std::path::PathBuf as FsPathBuf;
 use http::header::{CACHE_CONTROL, CONTENT_TYPE};
 use http::{HeaderValue, Method, StatusCode};
 use topcoat_core::context::Cx;
-use topcoat_router::{Body, Methods, Path, PathBuf, Response, Route, RouteFuture};
+use topcoat_router::{Body, Methods, Path, PathBuf, Route, RouteFuture, response::Response};
 
 use crate::BundledAsset;
 

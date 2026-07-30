@@ -4,7 +4,7 @@ use topcoat_core::{
     error::{Error, Result},
 };
 
-use crate::{IntoResponse, Response};
+use crate::response::{IntoResponse, Response};
 
 /// Builds an internal-server-error (HTTP 500) response.
 ///

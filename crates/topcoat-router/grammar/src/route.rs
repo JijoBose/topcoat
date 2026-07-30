@@ -91,7 +91,7 @@ impl ToTokens for Route {
         let parse_request = self.1.args.request().map(|request_ty| {
             let request_ident = request_ident();
             quote_spanned! {request_ty.span()=>
-                let #request_ident = <#request_ty as #topcoat_router::FromRequest>::from_request(cx, body).await?;
+                let #request_ident = <#request_ty as #topcoat_router::request::FromRequest>::from_request(cx, body).await?;
             }
         });
 
@@ -101,7 +101,7 @@ impl ToTokens for Route {
                 #item
                 Box::pin(async move {
                     #parse_request
-                    #topcoat_router::IntoResponse::into_response(#ident(cx, #(#args),*).await?, cx)
+                    #topcoat_router::response::IntoResponse::into_response(#ident(cx, #(#args),*).await?, cx)
                 })
             }
         };

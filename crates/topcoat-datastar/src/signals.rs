@@ -3,8 +3,8 @@ use std::ops::{Deref, DerefMut};
 use serde::{Deserialize, de::DeserializeOwned};
 use topcoat_core::{context::Cx, error::Result};
 use topcoat_router::{
-    Body, FromRequest, Method, OptionalFromRequest, content::Json, error::bad_request, method,
-    parse_query_params,
+    Body, Method, content::Json, error::bad_request, parse_query_params,
+    request::{FromRequest, OptionalFromRequest, method},
 };
 
 use crate::datastar_request;

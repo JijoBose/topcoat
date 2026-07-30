@@ -1,7 +1,7 @@
 use http::StatusCode;
 use topcoat_core::{context::Cx, error::Result};
 
-use crate::{IntoResponse, Response};
+use crate::response::{IntoResponse, Response};
 
 /// Builds a bad-request (HTTP 400) response with a client-safe description.
 ///

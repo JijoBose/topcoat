@@ -6,7 +6,7 @@ use http::header::ACCEPT_ENCODING;
 use tower::{ServiceExt, service_fn};
 use tower_http::compression::predicate::{NotForContentType, Predicate, SizeAbove};
 
-use crate::{Body, Response};
+use crate::{Body, response::Response};
 
 /// Configures the compression a [`Router`](crate::Router) applies to
 /// responses.
@@ -217,8 +217,8 @@ mod tests {
 
     use super::*;
     use crate::{
-        Bytes, HeaderMap, IntoResponse, Method, Path, RouteFn, RouteFuture, RouteHandlerFn, Router,
-        to_bytes,
+        HeaderMap, Method, Path, RouteFn, RouteFuture, RouteHandlerFn, Router, request::Bytes,
+        response::IntoResponse, to_bytes,
     };
 
     // -- Test helpers --

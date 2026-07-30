@@ -11,7 +11,7 @@ pub(crate) const DEFAULT_BODY_LIMIT: usize = 2 * 1024 * 1024;
 /// A router layer that overrides the request body size limit for the routes
 /// under its path.
 ///
-/// Extractors that buffer the request body ([`Bytes`](crate::Bytes),
+/// Extractors that buffer the request body ([`Bytes`](crate::request::Bytes),
 /// [`Json`](crate::content::Json), [`Form`](crate::content::Form), and the
 /// other built-ins) read at most the request's body limit and reject a larger
 /// body with `413 Content Too Large`, so a client cannot exhaust the server's
@@ -104,8 +104,8 @@ enum BodyLimitKind {
 /// [`usize::MAX`] when the limit is disabled.
 ///
 /// The built-in buffering extractors enforce this limit already. In a custom
-/// [`FromRequest`](crate::FromRequest) implementation, prefer delegating the
-/// buffering to [`Bytes`](crate::Bytes), which enforces it too; pass this
+/// [`FromRequest`](crate::request::FromRequest) implementation, prefer delegating the
+/// buffering to [`Bytes`](crate::request::Bytes), which enforces it too; pass this
 /// value to [`to_bytes`](crate::to_bytes) when reading the body by hand.
 ///
 /// # Examples
@@ -114,7 +114,7 @@ enum BodyLimitKind {
 /// use topcoat::{
 ///     Result,
 ///     context::Cx,
-///     router::{Body, FromRequest, body_limit, to_bytes},
+///     router::{Body, body_limit, request::FromRequest, to_bytes},
 /// };
 ///
 /// struct Raw(Vec<u8>);
@@ -143,7 +143,10 @@ mod tests {
 
     use super::*;
     use crate::{
-        Bytes, FromRequest, IntoResponse, Response, RouteFn, RouteFuture, Router, to_bytes,
+        RouteFn, RouteFuture, Router,
+        request::{Bytes, FromRequest},
+        response::{IntoResponse, Response},
+        to_bytes,
     };
 
     // -- body_limit --
