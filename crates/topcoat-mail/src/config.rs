@@ -1,7 +1,9 @@
 //! Mail configuration and sending through the configured transport.
 
-use topcoat_core::context::{Cx, app_context};
-use topcoat_core::error::Result;
+use topcoat_core::{
+    context::{Cx, app_context},
+    error::Result,
+};
 
 use crate::{Mail, Receipt, Transport};
 
@@ -94,9 +96,10 @@ pub async fn send(cx: &Cx, mail: Mail) -> Result<Receipt> {
 
 #[cfg(test)]
 mod tests {
+    use topcoat_core::context::CxTestBuilder;
+
     use super::*;
     use crate::{AddressError, Mailbox, MemoryTransport};
-    use topcoat_core::context::CxTestBuilder;
 
     fn mail() -> Result<Mail, AddressError> {
         Ok(Mail::builder()

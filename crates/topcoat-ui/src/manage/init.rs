@@ -1,11 +1,12 @@
 use std::path::PathBuf;
 
+use super::{
+    ChooseTheme,
+    package::Package,
+    state::{InstallState, InstalledTheme, STATE_FILE},
+    workspace::Workspace,
+};
 use crate::{DEFAULT_REGISTRY, Registry, content_hash};
-
-use super::ChooseTheme;
-use super::package::Package;
-use super::state::{InstallState, InstalledTheme, STATE_FILE};
-use super::workspace::Workspace;
 
 /// How to set up a package's install state.
 pub struct InitOptions {

@@ -30,6 +30,7 @@ pub use body_limit::*;
 #[cfg(feature = "compression")]
 pub use compression::*;
 pub(crate) use endpoint::Endpoint;
+pub use http::{HeaderMap, HeaderName, HeaderValue, Method, StatusCode, Uri, header};
 pub use layer::*;
 #[cfg(feature = "serve")]
 pub use listener::*;
@@ -43,5 +44,3 @@ pub use route::*;
 pub use router::*;
 #[cfg(feature = "serve")]
 pub use service::*;
-
-pub use http::{HeaderMap, HeaderName, HeaderValue, Method, StatusCode, Uri, header};

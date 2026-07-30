@@ -1,5 +1,4 @@
-use std::borrow::Cow;
-use std::pin::Pin;
+use std::{borrow::Cow, pin::Pin};
 
 use topcoat_core::{context::Cx, error::Result};
 use topcoat_view::View;

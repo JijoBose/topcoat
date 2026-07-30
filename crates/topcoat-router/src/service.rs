@@ -1,13 +1,16 @@
-use std::future::Future;
-use std::pin::Pin;
-use std::sync::Arc;
-use std::time::Duration;
-use std::{convert::Infallible, pin::pin};
+use std::{
+    convert::Infallible,
+    future::Future,
+    pin::{Pin, pin},
+    sync::Arc,
+    time::Duration,
+};
 
-use hyper::body::Incoming;
-use hyper::service::Service;
-use hyper_util::rt::{TokioExecutor, TokioIo};
-use hyper_util::server::conn::auto;
+use hyper::{body::Incoming, service::Service};
+use hyper_util::{
+    rt::{TokioExecutor, TokioIo},
+    server::conn::auto,
+};
 use tokio::sync::watch;
 
 use crate::{Body, Listener, Router, request::Request, response::Response};
@@ -181,18 +184,22 @@ pub async fn internal_serve(
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::Cow;
-    use std::convert::Infallible;
-    use std::net::SocketAddr;
-    use std::pin::Pin;
-    use std::task::{Context, Poll};
-    use std::time::Duration;
+    use std::{
+        borrow::Cow,
+        convert::Infallible,
+        net::SocketAddr,
+        pin::Pin,
+        task::{Context, Poll},
+        time::Duration,
+    };
 
     use http_body::Frame;
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    use tokio::net::{TcpListener, TcpStream};
-    use tokio::sync::oneshot;
-    use tokio::task::JoinHandle;
+    use tokio::{
+        io::{AsyncReadExt, AsyncWriteExt},
+        net::{TcpListener, TcpStream},
+        sync::oneshot,
+        task::JoinHandle,
+    };
     use topcoat_core::context::Cx;
 
     use super::*;

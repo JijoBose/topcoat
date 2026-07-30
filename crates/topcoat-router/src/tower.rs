@@ -1,15 +1,19 @@
 #![doc = include_str!("../docs/tower.md")]
 
-use std::borrow::Cow;
-use std::fmt::{self, Display};
-use std::future::Future;
-use std::pin::{Pin, pin};
-use std::task::{Context, Poll};
+use std::{
+    borrow::Cow,
+    fmt::{self, Display},
+    future::Future,
+    pin::{Pin, pin},
+    task::{Context, Poll},
+};
 
 use bytes::Bytes;
 use tokio::sync::{mpsc, oneshot};
-use topcoat_core::context::{Cx, CxBuilder};
-use topcoat_core::error::{Error, Result};
+use topcoat_core::{
+    context::{Cx, CxBuilder},
+    error::{Error, Result},
+};
 use tower::ServiceExt;
 
 use crate::{
@@ -469,14 +473,17 @@ fn recover(error: BoxError) -> Error {
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::Cow;
-    use std::convert::Infallible;
-    use std::sync::Arc;
-    use std::sync::atomic::{AtomicUsize, Ordering};
-    use std::time::Duration;
+    use std::{
+        borrow::Cow,
+        convert::Infallible,
+        sync::{
+            Arc,
+            atomic::{AtomicUsize, Ordering},
+        },
+        time::Duration,
+    };
 
-    use http::request::Parts;
-    use http::{HeaderValue, StatusCode};
+    use http::{HeaderValue, StatusCode, request::Parts};
     use topcoat_core::context::Cx;
 
     use super::*;

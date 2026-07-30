@@ -8,8 +8,10 @@ use syn::{
 };
 use topcoat_core_grammar::paths::{topcoat_context, topcoat_inventory, topcoat_router};
 
-use super::common::{HandlerArgs, request_ident};
-use super::method::Methods;
+use super::{
+    common::{HandlerArgs, request_ident},
+    method::Methods,
+};
 
 pub struct RouteAttr {
     methods: Methods,

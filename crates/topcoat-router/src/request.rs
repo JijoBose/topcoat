@@ -1,3 +1,6 @@
+/// Byte-buffer types re-exported for use as request body extractors and as
+/// response bodies.
+pub use bytes::{Bytes, BytesMut};
 use http::request::Parts;
 use topcoat_core::{
     context::{Cx, request_context},
@@ -5,10 +8,6 @@ use topcoat_core::{
 };
 
 use crate::{Body, body_limit, error::bad_request, to_bytes};
-
-/// Byte-buffer types re-exported for use as request body extractors and as
-/// response bodies.
-pub use bytes::{Bytes, BytesMut};
 
 /// An incoming HTTP request, carrying a [`Body`] by default.
 pub type Request<T = Body> = http::Request<T>;

@@ -1,11 +1,14 @@
-use std::convert::Infallible;
-use std::pin::Pin;
-use std::task::{Context, Poll};
+use std::{
+    convert::Infallible,
+    pin::Pin,
+    task::{Context, Poll},
+};
 
 use bytes::Bytes;
 use http_body::{Frame, SizeHint};
-use http_body_util::combinators::UnsyncBoxBody;
-use http_body_util::{BodyExt, BodyStream, Empty, Full, LengthLimitError, Limited};
+use http_body_util::{
+    BodyExt, BodyStream, Empty, Full, LengthLimitError, Limited, combinators::UnsyncBoxBody,
+};
 use topcoat_core::error::Result;
 
 use crate::error::{bad_request, content_too_large};

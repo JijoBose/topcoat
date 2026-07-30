@@ -1,13 +1,13 @@
-use console::style;
-use futures_util::{SinkExt, StreamExt};
 use std::{
     borrow::Cow,
     future,
     net::SocketAddr,
     sync::{Arc, Mutex},
 };
-use tokio::net::TcpListener;
-use tokio::sync::broadcast;
+
+use console::style;
+use futures_util::{SinkExt, StreamExt};
+use tokio::{net::TcpListener, sync::broadcast};
 use topcoat_core::context::{Cx, app_context};
 use topcoat_router::{
     Body, HeaderValue, Method, Path, RouteFn, RouteFuture, Router, RouterService,

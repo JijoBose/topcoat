@@ -1,6 +1,8 @@
-use std::fmt;
-use std::pin::Pin;
-use std::task::{Context, Poll};
+use std::{
+    fmt,
+    pin::Pin,
+    task::{Context, Poll},
+};
 
 use bytes::Bytes;
 use futures_core::Stream;
@@ -11,9 +13,9 @@ use topcoat_core::{
     error::{Error, Result},
 };
 
-use crate::content::sse::{Event, KeepAlive, KeepAliveTimer};
 use crate::{
     Body, BoxError,
+    content::sse::{Event, KeepAlive, KeepAliveTimer},
     response::{IntoResponse, Response},
 };
 
@@ -158,8 +160,7 @@ where
 mod tests {
     use std::time::Duration;
 
-    use futures_util::StreamExt;
-    use futures_util::stream;
+    use futures_util::{StreamExt, stream};
     use tokio::time::Instant;
 
     use super::*;

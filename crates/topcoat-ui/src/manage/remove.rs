@@ -1,9 +1,6 @@
-use std::io::ErrorKind;
-use std::path::PathBuf;
+use std::{io::ErrorKind, path::PathBuf};
 
-use super::module;
-use super::package::Package;
-use super::state::InstallState;
+use super::{module, package::Package, state::InstallState};
 
 /// A component removed by [`remove`].
 pub struct Removed {

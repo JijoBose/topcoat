@@ -1,6 +1,4 @@
-use std::borrow::Cow;
-use std::ops::Index;
-use std::pin::Pin;
+use std::{borrow::Cow, ops::Index, pin::Pin};
 
 use topcoat_core::{context::CxBuilder, error::Result};
 
@@ -34,8 +32,11 @@ pub type LayerFuture<'a> = Pin<Box<dyn Future<Output = Result<Response>> + Send 
 ///
 /// ```rust
 /// use std::borrow::Cow;
-/// use topcoat::context::CxBuilder;
-/// use topcoat::router::{Body, Layer, LayerFuture, Next, Path};
+///
+/// use topcoat::{
+///     context::CxBuilder,
+///     router::{Body, Layer, LayerFuture, Next, Path},
+/// };
 ///
 /// struct Timing;
 ///
@@ -235,8 +236,10 @@ impl<'a> Next<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::future::Future;
-    use std::sync::{Arc, Mutex};
+    use std::{
+        future::Future,
+        sync::{Arc, Mutex},
+    };
 
     use http::StatusCode;
     use topcoat_core::context::{ContextMap, Cx, CxBuilder, app_context};

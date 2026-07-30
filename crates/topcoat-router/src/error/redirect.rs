@@ -1,5 +1,4 @@
-use http::header::LOCATION;
-use http::{HeaderValue, StatusCode};
+use http::{HeaderValue, StatusCode, header::LOCATION};
 use topcoat_core::{context::Cx, error::Result};
 
 use crate::response::{IntoResponse, Response};
@@ -15,9 +14,7 @@ use crate::response::{IntoResponse, Response};
 /// ```rust
 /// # struct User;
 /// # async fn lookup(_cx: &Cx, _id: u64) -> Option<User> { None }
-/// use topcoat::Result;
-/// use topcoat::context::Cx;
-/// use topcoat::router::error::redirect;
+/// use topcoat::{Result, context::Cx, router::error::redirect};
 ///
 /// async fn fetch_user(cx: &Cx, id: u64) -> Result<User> {
 ///     let Some(user) = lookup(cx, id).await else {
@@ -44,9 +41,11 @@ pub fn redirect(uri: &str) -> RedirectError {
 /// # Examples
 ///
 /// ```rust
-/// use topcoat::Result;
-/// use topcoat::context::Cx;
-/// use topcoat::router::{error::redirect_permanent, page};
+/// use topcoat::{
+///     Result,
+///     context::Cx,
+///     router::{error::redirect_permanent, page},
+/// };
 ///
 /// #[page]
 /// async fn legacy_profile(cx: &Cx) -> Result {
@@ -115,11 +114,13 @@ impl IntoResponse for RedirectError {
 /// # Examples
 ///
 /// ```rust
-/// use topcoat::Result;
-/// use topcoat::context::Cx;
-/// use topcoat::router::{
-///     error::{SeeOther, see_other},
-///     route,
+/// use topcoat::{
+///     Result,
+///     context::Cx,
+///     router::{
+///         error::{SeeOther, see_other},
+///         route,
+///     },
 /// };
 ///
 /// #[route(POST "/logout")]

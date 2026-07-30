@@ -1,6 +1,4 @@
-use http::HeaderValue;
-use http::header::HeaderName;
-use http::response::Parts;
+use http::{HeaderValue, header::HeaderName, response::Parts};
 use serde::Serialize;
 use serde_json::{Map, Value};
 use topcoat_core::{context::Cx, error::Result};

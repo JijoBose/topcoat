@@ -6,13 +6,15 @@ use syn::{
     parse_quote,
     spanned::Spanned,
 };
-use topcoat_core_grammar::ParseOption;
-use topcoat_core_grammar::paths::{
-    topcoat_context, topcoat_inventory, topcoat_router, topcoat_view_macro,
+use topcoat_core_grammar::{
+    ParseOption,
+    paths::{topcoat_context, topcoat_inventory, topcoat_router, topcoat_view_macro},
 };
 
-use super::common::{HandlerArg, HandlerArgs, request_ident};
-use super::method::Methods;
+use super::{
+    common::{HandlerArg, HandlerArgs, request_ident},
+    method::Methods,
+};
 
 pub struct PageAttr {
     /// The declared HTTP methods; the page serves `GET` when omitted.

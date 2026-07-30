@@ -4,7 +4,9 @@ use topcoat::{
     router::{
         Router,
         content::websocket::{Message, WebSocketUpgrade},
-        page, response::Response, route,
+        page,
+        response::Response,
+        route,
     },
     view::view,
 };

@@ -15,8 +15,7 @@
 //!   becomes a single-event stream.
 //! - **Responders** ([`DatastarSelector`], [`DatastarMode`], ...) implement
 //!   [`IntoResponseParts`](topcoat_router::response::IntoResponseParts) to set the headers Datastar
-//!   reads on
-//!   plain `text/html`, `application/json`, and `text/javascript` responses.
+//!   reads on plain `text/html`, `application/json`, and `text/javascript` responses.
 //!
 //! The raw header names are available as constants in the [`header`] module.
 

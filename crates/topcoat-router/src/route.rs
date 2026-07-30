@@ -50,8 +50,10 @@ impl RouteFn {
     /// [`Methods::Any`] to respond to every method.
     ///
     /// ```rust
-    /// use topcoat::context::Cx;
-    /// use topcoat::router::{Body, Method, RouteFn, RouteFuture};
+    /// use topcoat::{
+    ///     context::Cx,
+    ///     router::{Body, Method, RouteFn, RouteFuture},
+    /// };
     ///
     /// fn handler(_cx: &Cx, _body: Body) -> RouteFuture<'_> {
     ///     Box::pin(async move { unimplemented!() })

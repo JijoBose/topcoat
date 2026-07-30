@@ -4,10 +4,8 @@ use topcoat_core::{
     context::Cx,
     error::{Error, Result},
 };
-
 use topcoat_router::{
-    Body, Method, Methods, Path, PathBuf, Route, RouteFuture, RouterBuilder,
-    response::IntoResponse,
+    Body, Method, Methods, Path, PathBuf, Route, RouteFuture, RouterBuilder, response::IntoResponse,
 };
 use topcoat_view::View;
 

@@ -3,7 +3,6 @@ mod item;
 
 pub use attr::*;
 pub use item::*;
-
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 use topcoat_core_grammar::paths::{

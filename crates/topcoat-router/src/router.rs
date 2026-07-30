@@ -1,20 +1,23 @@
-use std::any::{Any, type_name};
-use std::borrow::Cow;
-use std::collections::HashMap;
-use std::fmt;
-use std::future::{Future, poll_fn};
-use std::panic::{AssertUnwindSafe, catch_unwind};
-use std::pin::pin;
-use std::sync::Arc;
-use std::task::Poll;
+use std::{
+    any::{Any, type_name},
+    borrow::Cow,
+    collections::HashMap,
+    fmt,
+    future::{Future, poll_fn},
+    panic::{AssertUnwindSafe, catch_unwind},
+    pin::pin,
+    sync::Arc,
+    task::Poll,
+};
 
-use topcoat_core::base_url::BaseUrl;
-use topcoat_core::context::{ContextMap, CxBuilder};
+use topcoat_core::{
+    base_url::BaseUrl,
+    context::{ContextMap, CxBuilder},
+};
 
-use crate::RawPathParamSpec;
 use crate::{
     Endpoint, Layer, LayerId, Layers, LayoutFn, Methods, Next, PageFn, PageWithLayouts,
-    PathSegment, RawPathParams, Route, Terminal,
+    PathSegment, RawPathParamSpec, RawPathParams, Route, Terminal,
     error::{internal_server_response, respond},
     request::Request,
     response::Response,
@@ -407,8 +410,10 @@ impl RouterBuilder {
     /// # struct User;
     /// # #[route(GET "/users")]
     /// # async fn get_user() -> Result<&'static str> { Ok("ok") }
-    /// use topcoat::context::{Cx, app_context};
-    /// use topcoat::router::Router;
+    /// use topcoat::{
+    ///     context::{Cx, app_context},
+    ///     router::Router,
+    /// };
     ///
     /// struct Database {/* ... */}
     /// # impl Database {
@@ -612,13 +617,13 @@ impl Default for RouterBuilder {
 
 #[cfg(test)]
 mod tests {
-    use std::future::Future;
-    use std::pin::Pin;
-    use std::sync::Mutex;
+    use std::{future::Future, pin::Pin, sync::Mutex};
 
     use http::{HeaderMap, StatusCode};
-    use topcoat_core::context::{Cx, app_context, request_context};
-    use topcoat_core::error::Result;
+    use topcoat_core::{
+        context::{Cx, app_context, request_context},
+        error::Result,
+    };
     use topcoat_view::{DynViewPart, HtmlContext, HtmlWriter, PartsWriter, View, ViewParts};
 
     use super::*;

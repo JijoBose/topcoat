@@ -1,5 +1,4 @@
-use http::HeaderValue;
-use http::response::Parts;
+use http::{HeaderValue, response::Parts};
 use serde::Serialize;
 use serde_json::Value;
 use topcoat_core::{context::Cx, error::Result};

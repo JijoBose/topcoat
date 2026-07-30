@@ -1,5 +1,4 @@
-use core::fmt;
-use core::fmt::Write as _;
+use core::{fmt, fmt::Write as _};
 use std::borrow::Cow;
 
 #[cfg(feature = "http")]
@@ -664,8 +663,10 @@ mod tests {
 
     #[cfg(feature = "http")]
     mod response {
-        use http::header::{CACHE_CONTROL, SET_COOKIE};
-        use http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
+        use http::{
+            HeaderMap, HeaderName, HeaderValue, StatusCode,
+            header::{CACHE_CONTROL, SET_COOKIE},
+        };
 
         use super::*;
         use crate::NodeViewParts;

@@ -17,9 +17,7 @@ use crate::response::{IntoResponse, Response};
 /// # use topcoat::Error;
 /// # struct Dashboard;
 /// # async fn fetch_dashboard(_cx: &Cx) -> Result<Dashboard, Error> { Ok(Dashboard) }
-/// use topcoat::Result;
-/// use topcoat::context::Cx;
-/// use topcoat::router::error::internal_server_error;
+/// use topcoat::{Result, context::Cx, router::error::internal_server_error};
 ///
 /// async fn load_dashboard(cx: &Cx) -> Result<Dashboard> {
 ///     let dashboard = fetch_dashboard(cx).await.map_err(internal_server_error)?;

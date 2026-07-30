@@ -1,12 +1,13 @@
-use std::error::Error;
-use std::path::{Path, PathBuf};
+use std::{
+    error::Error,
+    path::{Path, PathBuf},
+};
 
 use clap::Args;
 use console::style;
 
-use crate::common::cargo::{BuildFlags, BuildOpts, Metadata};
-
 use super::{CACHE_SCOPE, OUT_SUBDIR};
+use crate::common::cargo::{BuildFlags, BuildOpts, Metadata};
 
 #[derive(Args)]
 pub(super) struct BundleArgs {

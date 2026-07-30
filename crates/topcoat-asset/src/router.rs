@@ -54,8 +54,10 @@ pub trait RouterBuilderAssetExt {
     /// Hosting the bundled files on a CDN instead of serving them:
     ///
     /// ```rust
-    /// use topcoat::asset::{AssetBundle, AssetConfig, RouterBuilderAssetExt};
-    /// use topcoat::router::Router;
+    /// use topcoat::{
+    ///     asset::{AssetBundle, AssetConfig, RouterBuilderAssetExt},
+    ///     router::Router,
+    /// };
     ///
     /// pub fn router() -> Router {
     ///     Router::builder()

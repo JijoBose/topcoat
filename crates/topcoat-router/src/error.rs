@@ -12,20 +12,21 @@ mod unauthorized;
 pub use bad_request::*;
 pub use content_too_large::*;
 pub use forbidden::*;
+use http::StatusCode;
 pub use internal_server::*;
 pub use method_not_allowed::*;
 pub use not_found::*;
 pub use redirect::*;
+use topcoat_core::{
+    context::Cx,
+    error::{Error, Result},
+};
 pub use unauthorized::*;
-
-use http::StatusCode;
 
 use crate::{
     Body,
     response::{IntoResponse, Response},
 };
-use topcoat_core::context::Cx;
-use topcoat_core::error::{Error, Result};
 
 /// Renders any [`IntoResponse`] value into a [`Response`], falling back to the
 /// error's response if conversion fails. This is the terminal conversion the
@@ -107,9 +108,7 @@ impl IntoResponse for Error {
 /// ```rust
 /// # struct User;
 /// # async fn lookup(_cx: &Cx, _id: u64) -> Option<User> { None }
-/// use topcoat::Result;
-/// use topcoat::context::Cx;
-/// use topcoat::router::error::RouterErrorExt;
+/// use topcoat::{Result, context::Cx, router::error::RouterErrorExt};
 ///
 /// async fn fetch_user(cx: &Cx, id: u64) -> Result<User> {
 ///     let user = lookup(cx, id).await.ok_or_redirect("/users")?;

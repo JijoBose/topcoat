@@ -1,7 +1,9 @@
 #![doc = include_str!("../../docs/content/multipart.md")]
 
-use std::pin::Pin;
-use std::task::{Context, Poll};
+use std::{
+    pin::Pin,
+    task::{Context, Poll},
+};
 
 use bytes::Bytes;
 use futures_util::Stream;

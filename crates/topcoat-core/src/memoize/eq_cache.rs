@@ -246,8 +246,9 @@ mod impls {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::sync::atomic::{AtomicUsize, Ordering};
+
+    use super::*;
 
     /// Returns a fresh counter with `'static` lifetime so closures that capture it can be
     /// `Copy + 'static` (the bounds `MemoizeCache::memoize` imposes on its function).

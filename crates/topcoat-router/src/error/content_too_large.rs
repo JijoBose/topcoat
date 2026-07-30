@@ -12,8 +12,7 @@ use crate::response::{IntoResponse, Response};
 /// # Examples
 ///
 /// ```rust
-/// use topcoat::Result;
-/// use topcoat::router::error::content_too_large;
+/// use topcoat::{Result, router::error::content_too_large};
 ///
 /// const MAX_COMMENT_CHARS: usize = 4096;
 ///

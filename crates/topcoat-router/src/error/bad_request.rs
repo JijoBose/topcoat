@@ -11,8 +11,7 @@ use crate::response::{IntoResponse, Response};
 /// # Examples
 ///
 /// ```rust
-/// use topcoat::Result;
-/// use topcoat::router::error::bad_request;
+/// use topcoat::{Result, router::error::bad_request};
 ///
 /// async fn update_user(name: String) -> Result<()> {
 ///     if name.trim().is_empty() {
