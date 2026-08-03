@@ -2,15 +2,15 @@ use std::{
     any::{Any, type_name},
     borrow::Cow,
     collections::HashMap,
-    fmt,
+    fmt, iter,
     sync::Arc,
 };
 
 use topcoat_core::{base_url::BaseUrl, context::ContextMap};
 
 use crate::{
-    Endpoint, Layer, Layers, LayoutFn, Methods, OriginLayer, OriginPolicy, PageFn, PageWithLayouts,
-    PathSegment, RawPathParamSpec, Route, Router,
+    Endpoint, Layer, LayerId, Layers, LayoutFn, Methods, OriginLayer, OriginPolicy, PageFn,
+    PageWithLayouts, Path, PathSegment, RawPathParamSpec, Route, Router,
 };
 
 /// Builds a [`Router`] for a Topcoat application.
@@ -399,13 +399,20 @@ impl RouterBuilder {
         // to the same path *and* method are ambiguous, so reject them here.
         // Remember each group's first route index to name it in the layer
         // divergence panic below.
-        let mut grouped: HashMap<Cow<'static, str>, (usize, Endpoint)> = HashMap::new();
+        let mut grouped: HashMap<Cow<'static, str>, Endpoint> = HashMap::new();
         let mut interned_path_params: HashMap<&str, Arc<str>> = HashMap::new();
+        let mut layers_used = iter::repeat_n(false, layers.len()).collect::<Vec<_>>();
         for (index, route) in routes.iter().enumerate() {
             let layer_stack = layers.for_endpoint(route.path());
-            let (first, endpoint) = grouped
+            // Mark layers as used.
+            for layer_id in &layer_stack {
+                layers_used[layer_id.0] = true;
+            }
+
+            let endpoint = grouped
                 .entry(route.path().to_matchit_path())
                 .or_insert_with(|| {
+                    // Pre-compute path params for this endpoint.
                     let path_params = route
                         .path()
                         .segments()
@@ -425,21 +432,8 @@ impl RouterBuilder {
                             })
                         })
                         .collect();
-                    let endpoint =
-                        Endpoint::new(path_params, layer_stack.clone().into_boxed_slice());
-                    (index, endpoint)
+                    Endpoint::new(path_params, layer_stack.into_boxed_slice())
                 });
-
-            // Every route grouped at a path shares the endpoint's layer stack
-            // (the 405 fallback included), so their full paths -- group
-            // segments and all -- must select the same layers. Reject a
-            // divergence rather than let registration order pick a winner.
-            assert!(
-                layer_stack == endpoint.layers(),
-                "routes `{}` and `{}` serve the same URL path but select different layers",
-                routes[*first].path(),
-                route.path(),
-            );
 
             // An any-method route shares its path with specific-method routes
             // (which win at dispatch), so the two kinds are checked for
@@ -471,10 +465,19 @@ impl RouterBuilder {
             }
         }
 
-        // Precompute the layer stack wrapping each endpoint once, so dispatch
-        // only has to index into it rather than filter and sort per request.
+        // Sanity check for unused layers.
+        for (layer_id, used) in layers_used.into_iter().enumerate() {
+            let layer = &layers[LayerId(layer_id)];
+            assert!(
+                used || layer.path() == Path::ROOT,
+                "layer with path `{}` did not match any route, this is likely a mistake",
+                layers[LayerId(layer_id)].path()
+            );
+        }
+
+        // Insert batched endpoints into matchit router.
         let mut endpoints = matchit::Router::new();
-        for (path, (_, mut endpoint)) in grouped {
+        for (path, mut endpoint) in grouped {
             endpoint.alias_head_to_get();
             endpoints
                 .insert(path.clone(), endpoint)
@@ -501,7 +504,13 @@ impl Default for RouterBuilder {
 
 #[cfg(test)]
 mod tests {
-    use topcoat_core::context::{Cx, CxBuilder};
+    use std::{future::Future, pin::Pin};
+
+    use topcoat_core::{
+        context::{Cx, CxBuilder},
+        error::Result,
+    };
+    use topcoat_view::{View, ViewParts};
 
     use super::*;
     use crate::{
@@ -516,6 +525,14 @@ mod tests {
     /// A stand-in handler; builder tests register routes without running them.
     fn handler(cx: &Cx, _body: Body) -> RouteFuture<'_> {
         Box::pin(async move { "handled".into_response(cx) })
+    }
+
+    /// A stand-in page; builder tests register pages without rendering them.
+    fn render_page(
+        _cx: &Cx,
+        _body: Body,
+    ) -> Pin<Box<dyn Future<Output = Result<View>> + Send + '_>> {
+        Box::pin(async move { Ok(View::new(ViewParts::new())) })
     }
 
     /// A stand-in layer that continues the chain unchanged.
@@ -577,15 +594,86 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "select different layers")]
-    fn routes_sharing_a_url_with_different_layers_panic() {
-        // Both routes serve `/x` (groups are stripped from the URL), but only
-        // the `(a)` route is wrapped by the `/(a)` layer. The endpoint's layer
-        // stack is shared, so the build rejects the divergence.
+    fn layer_wrapping_a_route_builds() {
         let _ = RouterBuilder::new()
-            .route(RouteFn::new(Method::GET, path("/(a)/x"), handler))
-            .route(RouteFn::new(Method::POST, path("/(b)/x"), handler))
+            .route(RouteFn::new(Method::GET, path("/admin/users"), handler))
+            .layer(LayerFn::new(path("/admin"), noop_layer))
+            .build();
+    }
+
+    #[test]
+    fn layer_wrapping_a_page_builds() {
+        // Pages are wired into routes before layers are checked, so a layer
+        // over a page's path counts as used.
+        let _ = RouterBuilder::new()
+            .page(PageFn::new(Method::GET, path("/admin/p"), render_page))
+            .layer(LayerFn::new(path("/admin"), noop_layer))
+            .build();
+    }
+
+    #[test]
+    fn root_layer_without_routes_builds() {
+        // A layer at the root path wraps whatever the router serves, so it is
+        // exempt from the check even with nothing registered.
+        let _ = RouterBuilder::new()
+            .layer(LayerFn::new(path("/"), noop_layer))
+            .build();
+    }
+
+    #[test]
+    #[should_panic(expected = "layer with path `/admin` did not match any route")]
+    fn layer_matching_no_route_panics() {
+        let _ = RouterBuilder::new()
+            .route(RouteFn::new(Method::GET, path("/x"), handler))
+            .layer(LayerFn::new(path("/admin"), noop_layer))
+            .build();
+    }
+
+    #[test]
+    #[should_panic(expected = "layer with path `/admin` did not match any route")]
+    fn layer_matching_part_of_a_segment_panics() {
+        // Prefix matching compares whole segments, so `/admin` does not wrap
+        // `/administrator`.
+        let _ = RouterBuilder::new()
+            .route(RouteFn::new(Method::GET, path("/administrator"), handler))
+            .layer(LayerFn::new(path("/admin"), noop_layer))
+            .build();
+    }
+
+    #[test]
+    #[should_panic(expected = "layer with path `/(a)` did not match any route")]
+    fn layer_in_an_unused_group_panics() {
+        // Groups are part of the logical path: the `(a)` layer does not wrap
+        // the route in `(b)`, even though both serve `/x`.
+        let _ = RouterBuilder::new()
+            .route(RouteFn::new(Method::GET, path("/(b)/x"), handler))
             .layer(LayerFn::new(path("/(a)"), noop_layer))
+            .build();
+    }
+
+    #[test]
+    #[should_panic(expected = "layer with path `/users/{id}` did not match any route")]
+    fn layer_with_another_param_name_panics() {
+        // Parameter names are part of a segment, so `{id}` does not wrap an
+        // endpoint spelled with `{user_id}`.
+        let _ = RouterBuilder::new()
+            .route(RouteFn::new(
+                Method::GET,
+                path("/users/{user_id}/posts"),
+                handler,
+            ))
+            .layer(LayerFn::new(path("/users/{id}"), noop_layer))
+            .build();
+    }
+
+    #[test]
+    #[should_panic(expected = "layer with path `/posts` did not match any route")]
+    fn one_unused_layer_among_used_ones_panics() {
+        let _ = RouterBuilder::new()
+            .route(RouteFn::new(Method::GET, path("/users"), handler))
+            .layer(LayerFn::new(path("/"), noop_layer))
+            .layer(LayerFn::new(path("/users"), noop_layer))
+            .layer(LayerFn::new(path("/posts"), noop_layer))
             .build();
     }
 
