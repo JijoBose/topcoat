@@ -7,7 +7,7 @@ pub use key::*;
 use topcoat_core::context::Cx;
 pub use value::*;
 
-use crate::{HtmlContext, PartsWriter, ViewPart};
+use crate::{HtmlContext, PartsWriter};
 
 /// A single HTML attribute.
 ///
@@ -57,21 +57,16 @@ where
 {
     fn into_view_parts(self, cx: &Cx, parts: &mut PartsWriter<'_>) {
         if self.value.attribute_present() {
-            parts.push_part(ViewPart::unescaped(" "));
-            self.key
-                .into_view_parts(cx, &mut parts.with_context(HtmlContext::AttributeKey));
-            parts.push_part(ViewPart::unescaped("=\""));
-            self.value
-                .into_view_parts(cx, &mut parts.with_context(HtmlContext::AttributeValue));
-            parts.push_part(ViewPart::unescaped("\""));
+            parts.push_static_str_unescaped(" ");
+            parts.in_context(HtmlContext::AttributeKey, |parts| {
+                self.key.into_view_parts(cx, parts);
+            });
+            parts.push_static_str_unescaped("=\"");
+            parts.in_context(HtmlContext::AttributeValue, |parts| {
+                self.value.into_view_parts(cx, parts);
+            });
+            parts.push_static_str_unescaped("\"");
         }
-    }
-}
-
-impl AttributeViewParts for ViewPart {
-    #[inline]
-    fn into_view_parts(self, _cx: &Cx, parts: &mut PartsWriter<'_>) {
-        parts.push_part(self);
     }
 }
 
@@ -140,16 +135,39 @@ impl_tuple!(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12);
 
 #[cfg(test)]
 mod tests {
+    use std::{
+        future::Future,
+        pin::pin,
+        task::{Context, Poll, Waker},
+    };
+
     use super::*;
-    use crate::{View, ViewParts};
+    use crate::{internal::__build_view, render::scope};
+
+    /// Drives `fut` to completion on the current thread.
+    ///
+    /// The futures under test never wait on external events, so polling in a
+    /// tight loop is sufficient.
+    fn block_on<F: Future>(fut: F) -> F::Output {
+        let mut fut = pin!(fut);
+        let mut task = Context::from_waker(Waker::noop());
+        loop {
+            if let Poll::Ready(output) = fut.as_mut().poll(&mut task) {
+                return output;
+            }
+        }
+    }
 
     fn render(attribute: impl AttributeViewParts) -> String {
-        let mut parts = ViewParts::new();
-        attribute.into_view_parts(
-            &Cx::default(),
-            &mut PartsWriter::new(&mut parts, HtmlContext::AttributeValue),
-        );
-        View::new(parts).render(&Cx::default())
+        block_on(scope(async {
+            let cx = Cx::default();
+            __build_view(|parts| {
+                parts.in_context(HtmlContext::AttributeValue, |parts| {
+                    attribute.into_view_parts(&cx, parts);
+                });
+            })
+            .render(&cx)
+        }))
     }
 
     #[test]

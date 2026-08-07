@@ -16,8 +16,10 @@ pub(crate) use match_expr::*;
 pub(crate) use statement::*;
 pub(crate) use static_segment::*;
 
+use super::emit::{Emit, Emitter};
+
 /// A single node of a lowered [`View`](crate::view::View). Produced by
-/// [`ViewBuilder`](super::ViewBuilder), emitted by [`Scope`].
+/// [`ViewBuilder`](super::ViewBuilder), emitted by [`Scope`](super::Scope).
 pub(crate) enum Node {
     /// Literal markup, emitted verbatim.
     StaticSegment(StaticSegment),
@@ -35,4 +37,35 @@ pub(crate) enum Node {
     IfElse(IfElse),
     /// A `match` whose arm bodies are lowered into nested scopes.
     MatchExpr(MatchExpr),
+}
+
+impl Node {
+    /// Whether this node renders components, in the node itself or anywhere
+    /// under its nested scopes, so emitting it produces a future to await.
+    pub(crate) fn is_async(&self) -> bool {
+        match self {
+            Self::Component(_) => true,
+            Self::ForLoop(node) => node.body.is_async(),
+            Self::IfElse(node) => node.then_branch.is_async() || node.else_branch.is_async(),
+            Self::MatchExpr(node) => node.arms.iter().any(|arm| arm.body.is_async()),
+            Self::StaticSegment(_) | Self::ExprNode(_) | Self::Local(_) | Self::Statement(_) => {
+                false
+            }
+        }
+    }
+}
+
+impl Emit for Node {
+    fn emit(&self, emitter: &mut Emitter) {
+        match self {
+            Self::StaticSegment(node) => node.emit(emitter),
+            Self::Component(node) => node.emit(emitter),
+            Self::ExprNode(node) => node.emit(emitter),
+            Self::Local(node) => node.emit(emitter),
+            Self::Statement(node) => node.emit(emitter),
+            Self::ForLoop(node) => node.emit(emitter),
+            Self::IfElse(node) => node.emit(emitter),
+            Self::MatchExpr(node) => node.emit(emitter),
+        }
+    }
 }

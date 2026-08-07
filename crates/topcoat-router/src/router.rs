@@ -89,7 +89,7 @@ impl Router {
         let (parts, body) = request.into_parts();
 
         let Ok(matched) = self.endpoints.at(parts.uri.path()) else {
-            return respond(&Cx::default(), not_found());
+            return topcoat_view::scope(async { respond(&Cx::default(), not_found()) }).await;
         };
 
         // The chain's terminal, reached through the endpoint's precomputed
@@ -111,11 +111,17 @@ impl Router {
         cx.insert(path_params);
         cx.insert(parts);
 
-        // The origin layer wraps the whole chain, denying untrusted
-        // cross-origin requests before anything else runs.
-        let next = Next::new(&self.layers, endpoint.layers(), terminal);
-        let response = self.origin.handle(&mut cx, body, next).await;
-        let response = respond(&cx, response);
+        // The whole chain runs inside one view scope, so every view built
+        // while handling the request shares the scope's instruction memory
+        // and rendering the response can execute it.
+        let response = topcoat_view::scope(async {
+            // The origin layer wraps the whole chain, denying untrusted
+            // cross-origin requests before anything else runs.
+            let next = Next::new(&self.layers, endpoint.layers(), terminal);
+            let response = self.origin.handle(&mut cx, body, next).await;
+            respond(&cx, response)
+        })
+        .await;
 
         // Compression runs outside every layer, so layers see uncompressed
         // bodies. The negotiation reads the request headers as the layers
@@ -144,7 +150,7 @@ mod tests {
         context::{Cx, CxBuilder, app_context, request_context},
         error::Result,
     };
-    use topcoat_view::{DynViewPart, HtmlContext, HtmlWriter, PartsWriter, View, ViewParts};
+    use topcoat_view::{DynViewPart, HtmlWriter, View, internal::__build_view};
 
     use super::*;
     use crate::{
@@ -260,9 +266,9 @@ mod tests {
     type ViewFuture<'cx> = Pin<Box<dyn Future<Output = Result<View>> + Send + 'cx>>;
 
     fn view(text: &'static str) -> View {
-        let mut parts = ViewParts::new();
-        PartsWriter::new(&mut parts, HtmlContext::Text).push_str(text);
-        View::new(parts)
+        __build_view(|parts| {
+            parts.push_str(text);
+        })
     }
 
     fn render_page(_cx: &Cx, _body: Body) -> ViewFuture<'_> {
@@ -276,17 +282,13 @@ mod tests {
         fn render(&self, _cx: &Cx, _w: &mut HtmlWriter<'_, '_>) {
             panic!("view rendering panicked");
         }
-
-        fn clone_box(&self) -> Box<dyn DynViewPart> {
-            Box::new(self.clone())
-        }
     }
 
     fn render_panicking_page(_cx: &Cx, _body: Body) -> ViewFuture<'_> {
         Box::pin(async move {
-            let mut parts = ViewParts::new();
-            PartsWriter::new(&mut parts, HtmlContext::Text).push_dyn(Box::new(PanickingViewPart));
-            Ok(View::new(parts))
+            Ok(__build_view(|parts| {
+                parts.push_dyn(Box::new(PanickingViewPart));
+            }))
         })
     }
 
@@ -294,11 +296,11 @@ mod tests {
     fn layout_root(_cx: &Cx, slot: Result<View>) -> ViewFuture<'_> {
         Box::pin(async move {
             let inner = slot?;
-            let mut parts = ViewParts::new();
-            PartsWriter::new(&mut parts, HtmlContext::Text).push_str("R[");
-            parts.push_view(inner);
-            PartsWriter::new(&mut parts, HtmlContext::Text).push_str("]");
-            Ok(View::new(parts))
+            Ok(__build_view(|parts| {
+                parts.push_str("R[");
+                parts.push_view(inner);
+                parts.push_str("]");
+            }))
         })
     }
 
@@ -306,11 +308,11 @@ mod tests {
     fn layout_admin(_cx: &Cx, slot: Result<View>) -> ViewFuture<'_> {
         Box::pin(async move {
             let inner = slot?;
-            let mut parts = ViewParts::new();
-            PartsWriter::new(&mut parts, HtmlContext::Text).push_str("A[");
-            parts.push_view(inner);
-            PartsWriter::new(&mut parts, HtmlContext::Text).push_str("]");
-            Ok(View::new(parts))
+            Ok(__build_view(|parts| {
+                parts.push_str("A[");
+                parts.push_view(inner);
+                parts.push_str("]");
+            }))
         })
     }
 

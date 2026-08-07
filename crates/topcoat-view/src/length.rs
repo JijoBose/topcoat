@@ -537,16 +537,20 @@ impl AttributeValueViewParts for Length {
 
     fn into_view_parts(self, _cx: &Cx, parts: &mut PartsWriter<'_>) {
         parts.push_f32(self.value);
-        parts.push_str_unescaped(self.unit.as_str());
+        parts.push_static_str_unescaped(self.unit.as_str());
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use topcoat_core::context::Cx;
+    use std::{
+        future::Future,
+        pin::pin,
+        task::{Context, Poll, Waker},
+    };
 
     use super::*;
-    use crate::{HtmlContext, View, ViewParts};
+    use crate::{HtmlContext, internal::__build_view, render::scope};
 
     /// Every unit constructor paired with its rendered form. The numeric value
     /// is the same across cases so each assertion focuses on the unit suffix.
@@ -602,13 +606,30 @@ mod tests {
         (Length::cqmax(2.0), "2cqmax"),
     ];
 
+    /// Drives `fut` to completion on the current thread.
+    ///
+    /// The futures under test never wait on external events, so polling in a
+    /// tight loop is sufficient.
+    fn block_on<F: Future>(fut: F) -> F::Output {
+        let mut fut = pin!(fut);
+        let mut task = Context::from_waker(Waker::noop());
+        loop {
+            if let Poll::Ready(output) = fut.as_mut().poll(&mut task) {
+                return output;
+            }
+        }
+    }
+
     fn render(value: impl AttributeValueViewParts) -> String {
-        let mut parts = ViewParts::new();
-        value.into_view_parts(
-            &Cx::default(),
-            &mut PartsWriter::new(&mut parts, HtmlContext::AttributeValue),
-        );
-        View::new(parts).render(&Cx::default())
+        block_on(scope(async {
+            let cx = Cx::default();
+            __build_view(|parts| {
+                parts.in_context(HtmlContext::AttributeValue, |parts| {
+                    value.into_view_parts(&cx, parts);
+                });
+            })
+            .render(&cx)
+        }))
     }
 
     #[test]
