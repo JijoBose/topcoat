@@ -345,6 +345,14 @@ view! {
 
 See how to define components in the [`component`] macro guide.
 
+# Concurrent Rendering
+
+The components inside a [`view!`] render concurrently. Sibling components, the iterations of a `for` loop, the taken branch of an `if` or `match`, a component and the child nodes passed to it, and components nested at any depth all start at the same time. A component waiting on a database query or an HTTP request therefore does not hold up the rest of the view, which avoids request waterfalls.
+
+The rendered markup always appears in source order, no matter which component finishes first. What is unspecified is the order in which component bodies run, and that order can change between renders. Treat a [`view!`] body as a set of functions without side effects: a component takes its props, reads the request context, and returns markup. Do not rely on another component in the same view having run first, and do not communicate between components through shared mutable state.
+
+Plain Rust in the view, such as interpolated expressions, `let` bindings, loop iterators, and branch conditions, still runs in source order. Only the components render concurrently.
+
 # Boolean And Conditional Attributes
 
 [Boolean HTML attributes](https://developer.mozilla.org/en-US/docs/Glossary/Boolean/HTML) such as `disabled`, `required`, and `checked` are true when the attribute is present and false when it is absent. HTML expects a present boolean attribute to have an empty value.
@@ -537,6 +545,7 @@ view! {
 [`NodeViewParts`]: trait.NodeViewParts.html
 [`PartsWriter`]: struct.PartsWriter.html
 [`component`]: attr.component.html
+[`memoize`]: https://docs.rs/topcoat/latest/topcoat/context/attr.memoize.html
 [`attributes!`]: macro.attributes.html
 [`class!`]: macro.class.html
 [`bool`]: https://doc.rust-lang.org/std/primitive.bool.html
