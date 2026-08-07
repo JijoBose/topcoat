@@ -37,7 +37,6 @@ members = [
     "examples/alpine-ajax",
     "examples/app-context",
     "examples/asset",
-    "examples/coffee-shop",
     "examples/context",
     "examples/cookie",
     "examples/datastar",
@@ -60,6 +59,8 @@ members = [
     "examples/toasty-todo",
     "examples/ui",
     "examples/websocket",
+
+    "demos/coffee-shop",
 
     "benchmarks/topcoat",
 ]

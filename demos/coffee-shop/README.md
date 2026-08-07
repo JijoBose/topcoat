@@ -13,7 +13,7 @@ Each feature lives in one small file:
 | Feature | File |
 |---|---|
 | `module_router!`, layouts, a POST route | [`src/app.rs`](src/app.rs) |
-| `#[memoize]`: the menu loads once per request | [`src/drinks.rs`](src/drinks.rs) |
+| `#[memoize]`: the menu loads once per request | [`src/models/drink.rs`](src/models/drink.rs) |
 | Functions, not middlewares: the customer cookie | [`src/customer.rs`](src/customer.rs) |
 | `topcoat ui` components, vendored source | [`src/components/`](src/components) |
 | `view!` control flow and `#[component]` props | [`src/app/menu.rs`](src/app/menu.rs) |
