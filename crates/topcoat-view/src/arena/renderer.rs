@@ -2,7 +2,7 @@ use topcoat_core::context::Cx;
 
 use crate::{
     Formatter,
-    render::{Instruction, InstructionPtr, Memory, StrPtr},
+    arena::{Arena, Instruction, InstructionPtr, StrPtr},
 };
 
 /// Executes a view's instruction block into a [`Formatter`].
@@ -11,17 +11,17 @@ use crate::{
 /// [`Call`](Instruction::Call) instructions, follows the
 /// [`Jmp`](Instruction::Jmp) redirects of filled view slots, and finishes
 /// when a [`Ret`](Instruction::Ret) is reached with an empty call stack.
-pub struct Machine<'a> {
-    memory: &'a Memory,
+pub struct Renderer<'a> {
+    arena: &'a Arena,
     ptr: InstructionPtr,
     stack: Vec<InstructionPtr>,
 }
 
-impl<'a> Machine<'a> {
+impl<'a> Renderer<'a> {
     #[must_use]
-    pub fn new(memory: &'a Memory, entry: InstructionPtr) -> Self {
+    pub fn new(arena: &'a Arena, entry: InstructionPtr) -> Self {
         Self {
-            memory,
+            arena,
             ptr: entry,
             stack: Vec::new(),
         }
@@ -36,10 +36,10 @@ impl<'a> Machine<'a> {
     pub fn execute(&mut self, cx: &Cx, f: &mut Formatter<'_>) {
         use std::fmt::Write;
 
-        let pool = self.memory.pool();
+        let pool = self.arena.pool();
         let mut int_buffer = itoa::Buffer::new();
         loop {
-            let instruction = self.memory.instruction(self.ptr);
+            let instruction = self.arena.instruction(self.ptr);
             self.ptr.increment();
 
             match instruction {
@@ -54,6 +54,10 @@ impl<'a> Machine<'a> {
                 Instruction::Jmp { entry } => self.ptr = *entry,
                 Instruction::Placeholder => {
                     panic!("tried to render a placeholder view before it was filled")
+                }
+                Instruction::View { ptr } => {
+                    let (arena, entry) = pool.fetch_view(*ptr);
+                    Renderer::new(arena, entry).execute(cx, f);
                 }
 
                 Instruction::Bool(inner) => f.write_str(if *inner { "true" } else { "false" }),

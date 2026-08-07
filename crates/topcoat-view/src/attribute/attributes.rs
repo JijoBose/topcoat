@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use topcoat_core::context::Cx;
 
 use crate::{
-    Attribute, AttributeValue, AttributeValueViewParts, AttributeViewParts, HtmlContext,
-    PartsWriter, internal::__build_view,
+    Attribute, AttributeValue, AttributeValueViewParts, AttributeViewParts, PartsWriter,
+    internal::{block, build_sync},
 };
 
 /// A runtime collection of HTML attributes with unique keys.
@@ -14,9 +14,10 @@ use crate::{
 /// Prefer constructing `Attributes` with the [`attributes!`](macro.attributes.html)
 /// macro.
 ///
-/// Each value is captured as an [`AttributeValue`] in the active scope's
-/// instruction memory, so a collection can only be built and rendered inside
-/// a view scope.
+/// Each value is captured as an [`AttributeValue`]: inside a `view!`
+/// invocation it lands in the enclosing instruction arena, and elsewhere it
+/// carries an arena of its own, so a collection can be built and rendered
+/// anywhere.
 #[derive(Debug, Default, Clone)]
 pub struct Attributes {
     map: HashMap<String, AttributeValue>,
@@ -72,10 +73,6 @@ impl Attributes {
     /// not be present, an [absent](AttributeValue::absent) value is stored
     /// instead, which causes the previous value to be replaced and the
     /// attribute not to be rendered in a `view!`.
-    ///
-    /// # Panics
-    ///
-    /// Panics if no view scope is active on the current task.
     #[inline]
     pub fn insert(
         &mut self,
@@ -87,11 +84,7 @@ impl Attributes {
             // A present value is always captured as an instruction block,
             // even when it writes nothing (a `true` boolean), so it is
             // never mistaken for an absent attribute.
-            AttributeValue::captured(__build_view(|parts| {
-                parts.in_context(HtmlContext::AttributeValue, |parts| {
-                    v.into_view_parts(cx, parts);
-                });
-            }))
+            AttributeValue::captured(build_sync(|| block(cx, |b| b.attribute_value(v))))
         } else {
             AttributeValue::absent()
         };
@@ -156,44 +149,20 @@ impl<'a> IntoIterator for &'a Attributes {
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        collections::HashSet,
-        future::Future,
-        pin::pin,
-        task::{Context, Poll, Waker},
-    };
+    use std::collections::HashSet;
 
     use topcoat_core::context::Cx;
 
     use super::*;
-    use crate::render::scope;
+    use crate::{arena::ArenaScope, internal::build_sync};
 
     /// Runs `f` with a request context inside a fresh view scope.
     fn in_scope<R>(f: impl FnOnce(&Cx) -> R) -> R {
-        block_on(scope(async { f(&Cx::default()) }))
-    }
-
-    /// Drives `fut` to completion on the current thread.
-    ///
-    /// The futures under test never wait on external events, so polling in a
-    /// tight loop is sufficient.
-    fn block_on<F: Future>(fut: F) -> F::Output {
-        let mut fut = pin!(fut);
-        let mut task = Context::from_waker(Waker::noop());
-        loop {
-            if let Poll::Ready(output) = fut.as_mut().poll(&mut task) {
-                return output;
-            }
-        }
+        ArenaScope::scope_sync(|| f(&Cx::default())).0
     }
 
     fn render(cx: &Cx, attrs: Attributes) -> String {
-        __build_view(|parts| {
-            parts.in_context(HtmlContext::AttributeValue, |parts| {
-                attrs.into_view_parts(cx, parts);
-            });
-        })
-        .render(cx)
+        build_sync(|| block(cx, |b| b.attributes(attrs))).render(cx)
     }
 
     #[test]

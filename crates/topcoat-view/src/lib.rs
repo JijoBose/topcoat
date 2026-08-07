@@ -1,5 +1,6 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+mod arena;
 mod attribute;
 mod class;
 mod component;
@@ -9,7 +10,6 @@ mod format;
 mod length;
 mod node;
 mod props;
-mod render;
 pub mod svg;
 mod unescaped;
 mod view;
@@ -23,7 +23,6 @@ pub use format::*;
 pub use length::*;
 pub use node::*;
 pub use props::*;
-pub use render::*;
 pub use unescaped::*;
 pub use view::*;
 

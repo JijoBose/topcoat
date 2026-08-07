@@ -135,39 +135,18 @@ impl_tuple!(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12);
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        future::Future,
-        pin::pin,
-        task::{Context, Poll, Waker},
+    use super::*;
+    use crate::{
+        arena::ArenaScope,
+        internal::{block, build_sync},
     };
 
-    use super::*;
-    use crate::{internal::__build_view, render::scope};
-
-    /// Drives `fut` to completion on the current thread.
-    ///
-    /// The futures under test never wait on external events, so polling in a
-    /// tight loop is sufficient.
-    fn block_on<F: Future>(fut: F) -> F::Output {
-        let mut fut = pin!(fut);
-        let mut task = Context::from_waker(Waker::noop());
-        loop {
-            if let Poll::Ready(output) = fut.as_mut().poll(&mut task) {
-                return output;
-            }
-        }
-    }
-
     fn render(attribute: impl AttributeViewParts) -> String {
-        block_on(scope(async {
+        let (html, _) = ArenaScope::scope_sync(|| {
             let cx = Cx::default();
-            __build_view(|parts| {
-                parts.in_context(HtmlContext::AttributeValue, |parts| {
-                    attribute.into_view_parts(&cx, parts);
-                });
-            })
-            .render(&cx)
-        }))
+            build_sync(|| block(&cx, |b| b.attributes(attribute))).render(&cx)
+        });
+        html
     }
 
     #[test]

@@ -90,7 +90,7 @@ impl Router {
         let (parts, body) = request.into_parts();
 
         let Ok(matched) = self.endpoints.at(parts.uri.path()) else {
-            return topcoat_view::scope(async { respond(&Cx::default(), not_found()) }).await;
+            return respond(&Cx::default(), not_found());
         };
 
         // The chain's terminal, reached through the endpoint's precomputed
@@ -113,17 +113,11 @@ impl Router {
         cx.insert(path_params);
         cx.insert(parts);
 
-        // The whole chain runs inside one view scope, so every view built
-        // while handling the request shares the scope's instruction memory
-        // and rendering the response can execute it.
-        let response = topcoat_view::scope(async {
-            // The origin layer wraps the whole chain, denying untrusted
-            // cross-origin requests before anything else runs.
-            let next = Next::new(&self.layers, endpoint.layers(), terminal);
-            let response = self.origin.handle(&mut cx, body, next).await;
-            respond(&cx, response)
-        })
-        .await;
+        // The origin layer wraps the whole chain, denying untrusted
+        // cross-origin requests before anything else runs.
+        let next = Next::new(&self.layers, endpoint.layers(), terminal);
+        let response = self.origin.handle(&mut cx, body, next).await;
+        let response = respond(&cx, response);
 
         // Compression runs outside every layer, so layers see uncompressed
         // bodies. The negotiation reads the request headers as the layers
@@ -148,11 +142,11 @@ mod tests {
     };
 
     use http::{HeaderMap, StatusCode};
+    use topcoat::view::{DynViewPart, HtmlWriter, NodeViewParts, PartsWriter, View, view};
     use topcoat_core::{
         context::{Cx, CxBuilder, app_context, request_context},
         error::Result,
     };
-    use topcoat_view::{DynViewPart, HtmlWriter, View, internal::__build_view};
 
     use super::*;
     use crate::{
@@ -272,54 +266,58 @@ mod tests {
     // Page and layout render functions for the rendering tests.
     type ViewFuture<'cx> = Pin<Box<dyn Future<Output = Result<View>> + Send + 'cx>>;
 
-    fn view(text: &'static str) -> View {
-        __build_view(|parts| {
-            parts.push_str(text);
+    fn render_page(cx: &Cx, _body: Body) -> ViewFuture<'_> {
+        Box::pin(async move {
+            view! { cx => "page" }
         })
     }
 
-    fn render_page(_cx: &Cx, _body: Body) -> ViewFuture<'_> {
-        Box::pin(async move { Ok(view("page")) })
+    /// A view part that panics when it renders, so the router's panic
+    /// handling during rendering is observable.
+    #[derive(Debug, Clone)]
+    struct Panicking;
+
+    impl NodeViewParts for Panicking {
+        fn into_view_parts(self, _cx: &Cx, parts: &mut PartsWriter<'_>) {
+            parts.push_dyn(Box::new(self));
+        }
     }
 
-    #[derive(Debug, Clone)]
-    struct PanickingViewPart;
-
-    impl DynViewPart for PanickingViewPart {
+    impl DynViewPart for Panicking {
         fn render(&self, _cx: &Cx, _w: &mut HtmlWriter<'_, '_>) {
             panic!("view rendering panicked");
         }
     }
 
-    fn render_panicking_page(_cx: &Cx, _body: Body) -> ViewFuture<'_> {
+    fn render_panicking_page(cx: &Cx, _body: Body) -> ViewFuture<'_> {
         Box::pin(async move {
-            Ok(__build_view(|parts| {
-                parts.push_dyn(Box::new(PanickingViewPart));
-            }))
+            view! { cx => (Panicking) }
         })
     }
 
     /// Wraps the child content in `R[ ... ]` so layout nesting is observable.
-    fn layout_root(_cx: &Cx, slot: Result<View>) -> ViewFuture<'_> {
+    fn layout_root(cx: &Cx, slot: Result<View>) -> ViewFuture<'_> {
         Box::pin(async move {
             let inner = slot?;
-            Ok(__build_view(|parts| {
-                parts.push_str("R[");
-                parts.push_view(inner);
-                parts.push_str("]");
-            }))
+            view! {
+                cx =>
+                "R["
+                (inner)
+                "]"
+            }
         })
     }
 
     /// Wraps the child content in `A[ ... ]`.
-    fn layout_admin(_cx: &Cx, slot: Result<View>) -> ViewFuture<'_> {
+    fn layout_admin(cx: &Cx, slot: Result<View>) -> ViewFuture<'_> {
         Box::pin(async move {
             let inner = slot?;
-            Ok(__build_view(|parts| {
-                parts.push_str("A[");
-                parts.push_view(inner);
-                parts.push_str("]");
-            }))
+            view! {
+                cx =>
+                "A["
+                (inner)
+                "]"
+            }
         })
     }
 
