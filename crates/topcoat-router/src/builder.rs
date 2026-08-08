@@ -511,10 +511,7 @@ impl Default for RouterBuilder {
 mod tests {
     use std::{future::Future, pin::Pin};
 
-    use topcoat_core::{
-        context::{Cx, CxBuilder},
-        error::Result,
-    };
+    use topcoat_core::{context::Cx, error::Result};
     use topcoat_view::View;
 
     use super::*;
@@ -541,7 +538,7 @@ mod tests {
     }
 
     /// A stand-in layer that continues the chain unchanged.
-    fn noop_layer<'a>(cx: &'a mut CxBuilder, body: Body, next: Next<'a>) -> LayerFuture<'a> {
+    fn noop_layer<'a>(cx: &'a mut Cx, body: Body, next: Next<'a>) -> LayerFuture<'a> {
         Box::pin(async move { next.run(cx, body).await })
     }
 

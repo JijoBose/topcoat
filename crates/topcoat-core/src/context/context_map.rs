@@ -36,7 +36,7 @@ pub fn try_app_context<T>(cx: &Cx) -> Option<&T>
 where
     T: Any + Send + Sync,
 {
-    cx.app_context.get::<T>()
+    cx.inner.app_context.get::<T>()
 }
 
 /// Returns a reference to the app context value of type `T` registered on the
@@ -65,6 +65,7 @@ where
 ///     db.fetch_user(id).await
 /// }
 /// ```
+#[must_use]
 #[track_caller]
 pub fn app_context<T>(cx: &Cx) -> &T
 where
@@ -103,7 +104,7 @@ pub fn try_request_context<T>(cx: &Cx) -> Option<&T>
 where
     T: Any + Send + Sync,
 {
-    cx.request_context.get::<T>()
+    cx.inner.request_context.get::<T>()
 }
 
 /// Returns a reference to the request context value of type `T` registered on
@@ -130,6 +131,7 @@ where
 ///     &id.0
 /// }
 /// ```
+#[must_use]
 #[track_caller]
 pub fn request_context<T>(cx: &Cx) -> &T
 where
