@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use http::Method;
 use topcoat_core::context::{Cx, try_request_context};
 
-use crate::{LayerId, Path, PathBuf, RawPathParamSpec};
+use crate::{LayerId, Path};
 
 /// The index of a registered route, with [`usize::MAX`] reserved to mean
 /// "none".
@@ -92,9 +92,11 @@ pub(crate) struct Endpoint {
     /// The URL path this endpoint serves, shared with every request matched to
     /// it. Group segments are stripped, since they are not part of the URL and
     /// routes that differ only in them land on one endpoint.
-    path: Arc<PathBuf>,
-    /// Interned path parameter names and capture kinds for this endpoint.
-    path_params: Box<[RawPathParamSpec]>,
+    ///
+    /// Held as the string backing a [`Path`] so the shared value is one
+    /// allocation reached through one pointer; read it with
+    /// [`path`](Self::path).
+    path: Arc<str>,
     /// The layers wrapping every route at this path, as ids into the router's
     /// layer table, precomputed at build time and ordered from least- to
     /// most-specific so the outermost layer runs first. Shared by every method
@@ -103,24 +105,24 @@ pub(crate) struct Endpoint {
 }
 
 impl Endpoint {
-    pub(crate) fn new(
-        path: Arc<PathBuf>,
-        path_params: Box<[RawPathParamSpec]>,
-        layers: Box<[LayerId]>,
-    ) -> Self {
+    pub(crate) fn new(path: &Path, layers: Box<[LayerId]>) -> Self {
         Self {
             standard: Default::default(),
             other: HashMap::new(),
             any: RouteIndex::NONE,
-            path,
-            path_params,
+            path: Arc::from(path.as_str()),
             layers,
         }
     }
 
-    /// Returns the URL path this endpoint serves, ready to be cloned onto a
-    /// matched request's context.
-    pub(crate) fn path(&self) -> &Arc<PathBuf> {
+    /// Returns the URL path this endpoint serves.
+    pub(crate) fn path(&self) -> &Path {
+        Path::new_unchecked(&self.path)
+    }
+
+    /// Returns the string backing [`path`](Self::path), ready to be cloned onto
+    /// a matched request's context.
+    pub(crate) fn shared_path(&self) -> &Arc<str> {
         &self.path
     }
 
@@ -173,11 +175,6 @@ impl Endpoint {
             .chain(self.other.keys())
     }
 
-    /// Returns the path parameter names and capture kinds for this endpoint.
-    pub(crate) fn path_params(&self) -> &[RawPathParamSpec] {
-        &self.path_params
-    }
-
     /// Returns the precomputed layer stack wrapping this path's routes, as ids
     /// into the router's layer table.
     pub(crate) fn layers(&self) -> &[LayerId] {
@@ -191,7 +188,7 @@ impl Endpoint {
 /// clone of it, so reading the path allocates nothing. Read it with
 /// [`endpoint_path`].
 #[derive(Debug, Clone)]
-pub(crate) struct EndpointPath(pub(crate) Arc<PathBuf>);
+pub(crate) struct EndpointPath(pub(crate) Arc<str>);
 
 /// Returns the path of the endpoint the current request matched.
 ///
@@ -219,7 +216,8 @@ pub(crate) struct EndpointPath(pub(crate) Arc<PathBuf>);
 #[track_caller]
 pub fn endpoint_path(cx: &Cx) -> &Path {
     match try_request_context::<EndpointPath>(cx) {
-        Some(EndpointPath(path)) => path,
+        // The router only ever stores the backing string of a valid path here.
+        Some(EndpointPath(path)) => Path::new_unchecked(path),
         None => panic!("this request matched no endpoint, so it has no endpoint path"),
     }
 }
@@ -364,7 +362,7 @@ mod tests {
 
     #[test]
     fn reads_the_matched_endpoint_path() {
-        let path = Arc::new(Path::new("/users/{id}").to_owned());
+        let path = Arc::from(Path::new("/users/{id}").as_str());
         let cx = CxTestBuilder::new()
             .request_context(EndpointPath(path))
             .build();

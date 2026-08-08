@@ -10,7 +10,7 @@ use topcoat_core::{base_url::BaseUrl, context::ContextMap};
 
 use crate::{
     Endpoint, Layer, LayerId, Layers, LayoutFn, Methods, OriginLayer, OriginPolicy, PageFn,
-    PageWithLayouts, Path, PathSegment, RawPathParamSpec, Route, Router,
+    PageWithLayouts, Path, Route, Router,
 };
 
 /// Builds a [`Router`] for a Topcoat application.
@@ -400,7 +400,6 @@ impl RouterBuilder {
         // Remember each group's first route index to name it in the layer
         // divergence panic below.
         let mut grouped: HashMap<Cow<'static, str>, Endpoint> = HashMap::new();
-        let mut interned_path_params: HashMap<&str, Arc<str>> = HashMap::new();
         let mut layers_used = iter::repeat_n(false, layers.len()).collect::<Vec<_>>();
         for (index, route) in routes.iter().enumerate() {
             let layer_stack = layers.for_endpoint(route.path());
@@ -412,32 +411,10 @@ impl RouterBuilder {
             let endpoint = grouped
                 .entry(route.path().to_matchit_path())
                 .or_insert_with_key(|matchit_path| {
-                    // The URL path this endpoint serves, stored once and cloned
-                    // onto the context of every request matched here. It is
-                    // taken from the key rather than the route so that routes
-                    // differing only in their group segments agree on it.
-                    let path = Arc::new(Path::new(matchit_path).to_owned());
-                    // Pre-compute path params for this endpoint.
-                    let path_params = route
-                        .path()
-                        .segments()
-                        .filter_map(|segment| {
-                            let (param, is_catch_all) = match segment {
-                                PathSegment::Param(param) => (param, false),
-                                PathSegment::CatchAll(param) => (param, true),
-                                _ => return None,
-                            };
-                            let interned = interned_path_params
-                                .entry(param)
-                                .or_insert_with(|| Arc::from(param.to_owned().into_boxed_str()));
-                            Some(if is_catch_all {
-                                RawPathParamSpec::catch_all(interned.clone())
-                            } else {
-                                RawPathParamSpec::segment(interned.clone())
-                            })
-                        })
-                        .collect();
-                    Endpoint::new(path, path_params, layer_stack.into_boxed_slice())
+                    // The path is taken from the key rather than the route so
+                    // that routes differing only in their group segments agree
+                    // on the one this endpoint serves.
+                    Endpoint::new(Path::new(matchit_path), layer_stack.into_boxed_slice())
                 });
 
             // An any-method route shares its path with specific-method routes
