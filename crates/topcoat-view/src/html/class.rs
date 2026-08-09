@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use topcoat_core::context::Cx;
 
-use crate::{AttributeValueViewParts, PartsWriter};
+use crate::{AttributeValueViewParts, PartsWriter, PromotedStr, StaticStr, Unescaped};
 
 /// Converts a value used as a class list entry into view parts.
 ///
@@ -59,6 +59,54 @@ impl ClassViewParts for &String {
     #[inline]
     fn into_view_parts(self, cx: &Cx, parts: &mut PartsWriter<'_>) {
         ClassViewParts::into_view_parts(self.as_str(), cx, parts);
+    }
+}
+
+impl ClassViewParts for PromotedStr {
+    #[inline]
+    fn is_present(&self) -> bool {
+        !self.0.is_empty()
+    }
+
+    #[inline]
+    fn into_view_parts(self, _cx: &Cx, parts: &mut PartsWriter<'_>) {
+        parts.push_promoted_str(self.0);
+    }
+}
+
+impl ClassViewParts for StaticStr {
+    #[inline]
+    fn is_present(&self) -> bool {
+        !self.0.is_empty()
+    }
+
+    #[inline]
+    fn into_view_parts(self, _cx: &Cx, parts: &mut PartsWriter<'_>) {
+        parts.push_static_str(self.0);
+    }
+}
+
+impl ClassViewParts for Unescaped<PromotedStr> {
+    #[inline]
+    fn is_present(&self) -> bool {
+        !self.0.0.is_empty()
+    }
+
+    #[inline]
+    fn into_view_parts(self, _cx: &Cx, parts: &mut PartsWriter<'_>) {
+        parts.push_promoted_str_unescaped(self.0.0);
+    }
+}
+
+impl ClassViewParts for Unescaped<StaticStr> {
+    #[inline]
+    fn is_present(&self) -> bool {
+        !self.0.0.is_empty()
+    }
+
+    #[inline]
+    fn into_view_parts(self, _cx: &Cx, parts: &mut PartsWriter<'_>) {
+        parts.push_static_str_unescaped(self.0.0);
     }
 }
 
@@ -153,7 +201,7 @@ impl<'a, 'b> ClassWriter<'a, 'b> {
     pub fn entry(&mut self, cx: &Cx, value: impl ClassViewParts) -> &mut Self {
         if value.is_present() {
             if !self.first {
-                self.parts.push_static_str(" ");
+                self.parts.push_promoted_str(&" ");
             }
             value.into_view_parts(cx, self.parts);
             self.first = false;
@@ -328,6 +376,20 @@ where
     }
 }
 
+/// The type of a class list built from string literals alone.
+///
+/// The [`class!`](../view/macro.class.html) macro merges a run of literals
+/// into one promoted string, so a list of literals has this type no matter how
+/// many entries it was written with. Write it out to hold such a list in a
+/// constant:
+///
+/// ```rust
+/// use topcoat::view::{StaticClass, class};
+///
+/// const BUTTON: StaticClass = class!("btn btn-lg rounded");
+/// ```
+pub type StaticClass = Class<Unescaped<PromotedStr>>;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -456,6 +518,45 @@ mod tests {
     fn absent_attribute_value_entry_is_skipped_without_a_separator() {
         let value = AttributeValue::absent();
         assert_eq!(render(Class(("a", &value, "b"))), "a b");
+    }
+
+    #[test]
+    fn promoted_and_static_entries_render_with_separators() {
+        let class = Class((PromotedStr(&"btn"), StaticStr("btn-lg")));
+        assert_eq!(render(class), "btn btn-lg");
+    }
+
+    #[test]
+    fn empty_promoted_and_static_entries_are_skipped_without_a_separator() {
+        let class = Class((StaticStr("a"), PromotedStr(&""), StaticStr(""), "b"));
+        assert!(class.attribute_present());
+        assert_eq!(render(class), "a b");
+    }
+
+    #[test]
+    fn promoted_and_static_entries_are_escaped_for_the_attribute_value_position() {
+        let class = Class((PromotedStr(&"a\"b"), StaticStr("c\"d")));
+        assert_eq!(render(class), "a&quot;b c&quot;d");
+    }
+
+    #[test]
+    fn unescaped_entries_render_verbatim() {
+        let class = Class((
+            Unescaped::new_unchecked(PromotedStr(&"a&quot;b")),
+            Unescaped::new_unchecked(StaticStr("c&amp;d")),
+        ));
+        assert_eq!(render(class), "a&quot;b c&amp;d");
+    }
+
+    #[test]
+    fn empty_unescaped_entries_are_skipped_without_a_separator() {
+        let class = Class((
+            "a",
+            Unescaped::new_unchecked(PromotedStr(&"")),
+            Unescaped::new_unchecked(StaticStr("")),
+            "b",
+        ));
+        assert_eq!(render(class), "a b");
     }
 
     #[test]
