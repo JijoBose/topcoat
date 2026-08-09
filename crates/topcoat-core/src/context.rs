@@ -1,7 +1,13 @@
 mod context_map;
 mod id;
 
-use std::{any::Any, sync::Arc};
+use std::{
+    any::Any,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+};
 
 pub use context_map::*;
 pub use id::*;
@@ -42,6 +48,7 @@ impl Cx {
                 request_context,
                 memoize_cache: MemoizeCache::new(),
                 abort_store: AbortStore::new(),
+                sealed: AtomicBool::new(false),
             }),
         }
     }
@@ -59,10 +66,13 @@ impl Cx {
     /// and the memoize cache. Take an owned handle for work that outlives the
     /// handler, such as a streaming response body or a WebSocket task.
     ///
-    /// While any detached handle is alive, the request context is frozen:
-    /// registering a value with [`insert`](Self::insert) panics.
+    /// Detaching seals the request context: [`insert`](Self::insert) and
+    /// [`get_mut`](Self::get_mut) panic from then on, including after every
+    /// detached handle was dropped.
     #[must_use]
     pub fn detach(&self) -> Cx {
+        self.inner.sealed.store(true, Ordering::Relaxed);
+
         Cx {
             inner: Arc::clone(&self.inner),
         }
@@ -76,7 +86,7 @@ impl Cx {
     ///
     /// # Panics
     ///
-    /// Panics while a handle taken with [`detach`](Self::detach) is alive.
+    /// Panics once a handle was taken with [`detach`](Self::detach).
     pub fn insert<T>(&mut self, value: T) -> Option<T>
     where
         T: Any + Send + Sync,
@@ -89,7 +99,7 @@ impl Cx {
     ///
     /// # Panics
     ///
-    /// Panics while a handle taken with [`detach`](Self::detach) is alive.
+    /// Panics once a handle was taken with [`detach`](Self::detach).
     #[must_use]
     pub fn get_mut<T>(&mut self) -> Option<&mut T>
     where
@@ -102,16 +112,19 @@ impl Cx {
     ///
     /// # Panics
     ///
-    /// Panics while a detached handle is alive, because the state is shared for
-    /// as long as the handle exists.
+    /// Panics once the context is sealed, because its state is then shared with
+    /// handles this one does not know about.
     #[track_caller]
     fn inner_mut(&mut self) -> &mut CxInner {
-        Arc::get_mut(&mut self.inner).unwrap_or_else(|| {
-            panic!(
-                "cannot modify the request context while a handle taken with \
-                 `Cx::detach` is alive"
-            )
-        })
+        assert!(
+            !self.inner.sealed.load(Ordering::Relaxed),
+            "cannot modify the request context after taking a handle with \
+             `Cx::detach`"
+        );
+
+        // Only `detach` shares the state, and it seals the context on the way,
+        // so an unsealed context is the sole handle to its state.
+        Arc::get_mut(&mut self.inner).expect("an unsealed context should be unique")
     }
 }
 
@@ -123,6 +136,7 @@ struct CxInner {
     request_context: ContextMap,
     memoize_cache: MemoizeCache,
     abort_store: AbortStore,
+    sealed: AtomicBool,
 }
 
 /// Assembles a [`Cx`] from scratch, for tests.
@@ -233,16 +247,34 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "`Cx::detach`")]
-    fn inserting_while_a_handle_is_alive_panics() {
+    fn inserting_after_detaching_panics() {
         let mut cx = Cx::new(Arc::new(ContextMap::new()));
         let _handle = cx.detach();
         cx.insert(Marker(0));
     }
 
     #[test]
-    fn dropping_every_handle_unfreezes_the_context() {
+    #[should_panic(expected = "`Cx::detach`")]
+    fn mutating_after_detaching_panics() {
+        let mut cx = Cx::new(Arc::new(ContextMap::new()));
+        cx.insert(Marker(0));
+        let _handle = cx.detach();
+        let _ = cx.get_mut::<Marker>();
+    }
+
+    #[test]
+    #[should_panic(expected = "`Cx::detach`")]
+    fn dropping_every_handle_keeps_the_context_sealed() {
         let mut cx = Cx::new(Arc::new(ContextMap::new()));
         drop(cx.detach());
-        assert_eq!(cx.insert(Marker(0)), None);
+        cx.insert(Marker(0));
+    }
+
+    #[test]
+    #[should_panic(expected = "`Cx::detach`")]
+    fn a_detached_handle_cannot_write_to_the_context() {
+        let cx = Cx::new(Arc::new(ContextMap::new()));
+        let mut handle = cx.detach();
+        handle.insert(Marker(0));
     }
 }

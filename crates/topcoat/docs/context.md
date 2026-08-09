@@ -149,7 +149,7 @@ async fn place_order(cx: &Cx) -> Result<&'static str> {
 }
 ```
 
-While a detached handle is alive the request context is frozen: registering another value on it panics. Layers register their values before calling `next.run`, so this only concerns a layer that writes to the context after the inner chain returned.
+Detaching seals the request context: registering another value on it panics from then on, through any handle and even after the detached handle was dropped. Layers register their values before calling `next.run`, so this only concerns a layer that writes to the context after the inner chain returned.
 
 A detached handle keeps reading the context after the response was sent, but it can no longer change what the client receives. Cookie changes and other response-directed writes made from work that outlives the handler are dropped.
 
