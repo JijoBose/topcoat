@@ -17,8 +17,8 @@ impl CookieLayer {
 }
 
 impl Layer for CookieLayer {
-    fn path(&self) -> &Path {
-        Path::new("/")
+    fn path(&self) -> Option<&Path> {
+        Some(Path::new("/"))
     }
 
     fn handle<'a>(&'a self, cx: &'a Cx, body: Body, next: Next<'a>) -> LayerFuture<'a> {
@@ -59,13 +59,20 @@ mod tests {
 
     use http::{Method, Request, header};
     use topcoat_core::{context::Cx, error::Result};
-    use topcoat_router::{Body, Methods, Path, Route, RouteFuture, Router, response::Response};
+    use topcoat_router::{
+        Body, Methods, Path, Route, RouteFuture, RouteId, Router, response::Response,
+    };
 
     use crate::{Cookies, RouterBuilderCookieExt, cookies};
 
     struct AddCookie;
 
     impl Route for AddCookie {
+        fn id(&self) -> RouteId {
+            static ID: std::sync::LazyLock<RouteId> = std::sync::LazyLock::new(RouteId::new);
+            *ID
+        }
+
         fn methods(&self) -> Methods<'_> {
             Methods::Only(&[Method::GET])
         }
@@ -107,6 +114,11 @@ mod tests {
     struct Detach(Arc<Mutex<Option<Cx>>>);
 
     impl Route for Detach {
+        fn id(&self) -> RouteId {
+            static ID: std::sync::LazyLock<RouteId> = std::sync::LazyLock::new(RouteId::new);
+            *ID
+        }
+
         fn methods(&self) -> Methods<'_> {
             Methods::Only(&[Method::GET])
         }

@@ -18,7 +18,7 @@ use tower::ServiceExt;
 
 use crate::{
     Body, BoxError, IntoPath, Layer, LayerFuture, Methods, Next, OwnedMethods, Path, Route,
-    RouteFuture,
+    RouteFuture, RouteId,
     request::{Request, parts},
     response::Response,
 };
@@ -65,6 +65,8 @@ use crate::{
 ///     .build();
 /// ```
 pub struct TowerRoute<S> {
+    /// The identity of this route's handler.
+    id: RouteId,
     /// The HTTP methods this route responds to.
     methods: OwnedMethods,
     /// The URL path this route handles.
@@ -89,6 +91,7 @@ impl<S> TowerRoute<S> {
     #[track_caller]
     pub fn new(methods: impl Into<OwnedMethods>, path: impl IntoPath, service: S) -> Self {
         Self {
+            id: RouteId::new(),
             methods: methods.into(),
             path: path.into_path(),
             service,
@@ -104,6 +107,10 @@ where
     ResBody: http_body::Body<Data = Bytes> + Send + 'static,
     ResBody::Error: Into<BoxError>,
 {
+    fn id(&self) -> RouteId {
+        self.id
+    }
+
     fn methods(&self) -> Methods<'_> {
         self.methods.as_methods()
     }
@@ -127,8 +134,8 @@ where
     }
 }
 
-/// A [`Layer`] that wraps the routes nested under its path in a
-/// [`tower::Layer`]'s middleware.
+/// A [`Layer`] that wraps request handling in a [`tower::Layer`]'s
+/// middleware.
 ///
 /// This adapter runs middleware from the tower ecosystem (a timeout, a rate
 /// limit, CORS, compression) inside a topcoat router. The middleware behaves
@@ -164,15 +171,18 @@ where
 ///     .build();
 /// ```
 pub struct TowerLayer<S> {
-    /// The URL path prefix whose routes this layer wraps.
-    path: Cow<'static, Path>,
+    /// The URL path prefix whose matched routes this layer wraps, or `None`
+    /// to wrap every request.
+    path: Option<Cow<'static, Path>>,
     /// The composed tower service, built once and cloned per request.
     service: S,
 }
 
 impl<S> TowerLayer<S> {
-    /// Wraps every route in the middleware `layer` builds; scope the layer
-    /// to a path prefix with [`at`](Self::at).
+    /// Wraps every request in the middleware `layer` builds, including one
+    /// that matches no route, so middleware answering requests on its own
+    /// (like a CORS preflight) sees them all. Scope the layer to a path
+    /// prefix with [`at`](Self::at).
     ///
     /// The middleware is built immediately and shared by every request
     /// passing through this layer.
@@ -182,12 +192,12 @@ impl<S> TowerLayer<S> {
         L: tower::Layer<TowerNext, Service = S>,
     {
         Self {
-            path: Cow::Borrowed(Path::ROOT),
+            path: None,
             service: layer.layer(TowerNext::new()),
         }
     }
 
-    /// Scopes the layer to the routes under `path`.
+    /// Scopes the layer to the matched routes under `path`.
     ///
     /// # Panics
     ///
@@ -195,7 +205,7 @@ impl<S> TowerLayer<S> {
     #[must_use]
     #[track_caller]
     pub fn at(mut self, path: impl IntoPath) -> Self {
-        self.path = path.into_path();
+        self.path = Some(path.into_path());
         self
     }
 }
@@ -208,8 +218,8 @@ where
     ResBody: http_body::Body<Data = Bytes> + Send + 'static,
     ResBody::Error: Into<BoxError>,
 {
-    fn path(&self) -> &Path {
-        &self.path
+    fn path(&self) -> Option<&Path> {
+        self.path.as_deref()
     }
 
     fn handle<'a>(&'a self, cx: &'a Cx, body: Body, next: Next<'a>) -> LayerFuture<'a> {
@@ -487,7 +497,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        Layers, Method, RouteFn, RouteFuture, Router, Terminal,
+        Method, RouteFn, RouteFuture, Router, Terminal,
         error::{NotFoundError, not_found},
         request::Bytes,
         response::IntoResponse,
@@ -520,8 +530,7 @@ mod tests {
 
     /// Runs a request through `layer` wrapped directly around `route`.
     fn run(layer: &dyn Layer, cx: &Cx, route: &RouteFn) -> Result<Response> {
-        let layers = Layers::default();
-        let next = Next::new(&layers, &[], Terminal::Route(route));
+        let next = Next::new(&[], Terminal::Route(route));
         block_on(layer.handle(cx, Body::empty(), next))
     }
 
@@ -819,7 +828,7 @@ mod tests {
     #[test]
     fn tower_layer_exposes_its_path() {
         let layer = TowerLayer::new(tower::layer::util::Identity::new()).at("/admin");
-        assert_eq!(layer.path(), Path::new("/admin"));
+        assert_eq!(layer.path(), Some(Path::new("/admin")));
     }
 
     #[test]
@@ -882,11 +891,10 @@ mod tests {
     #[test]
     fn chain_errors_tunnel_through_unchanged() {
         let layer = TowerLayer::new(tower::layer::util::Identity::new());
-        let layers = Layers::default();
         let route = RouteFn::new(Method::GET, path("/missing"), not_found_route);
         let cx = cx_for("/missing");
 
-        let next = Next::new(&layers, &[], Terminal::Route(&route));
+        let next = Next::new(&[], Terminal::Route(&route));
         let result = block_on(layer.handle(&cx, Body::empty(), next));
 
         // The 404 comes back out as the original typed error, not a response.
@@ -903,11 +911,10 @@ mod tests {
         // `Timeout` boxes its inner service's errors; the original error must
         // still be recovered on the way out.
         let layer = TowerLayer::new(tower::timeout::TimeoutLayer::new(Duration::from_mins(1)));
-        let layers = Layers::default();
         let route = RouteFn::new(Method::GET, path("/missing"), not_found_route);
         let cx = cx_for("/missing");
 
-        let next = Next::new(&layers, &[], Terminal::Route(&route));
+        let next = Next::new(&[], Terminal::Route(&route));
         let result = block_on(layer.handle(&cx, Body::empty(), next));
 
         assert!(
