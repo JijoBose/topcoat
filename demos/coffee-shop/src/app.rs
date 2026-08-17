@@ -12,7 +12,7 @@ use topcoat::{
         Router, RouterBuilderDiscoverExt,
         content::Form,
         error::{SeeOther, see_other},
-        layout, module_router, page, route,
+        href, layout, module_router, page, route,
     },
     tailwind,
     view::{attributes, view},
@@ -64,9 +64,9 @@ async fn shell(cx: &Cx, slot: Result) -> Result {
                     <nav
                         class="mx-auto flex w-full max-w-3xl items-center gap-6 px-6 py-4"
                     >
-                        <a href="/" class="font-semibold">"Little Crema"</a>
+                        <a href=(href!(page)) class="font-semibold">"Little Crema"</a>
                         <a
-                            href="/menu"
+                            href=(href!(menu::page))
                             class="text-sm text-muted-foreground hover:text-foreground"
                         >
                             "Menu"
@@ -103,7 +103,7 @@ async fn shell(cx: &Cx, slot: Result) -> Result {
 
 // A page in the root module renders at /.
 #[page]
-async fn home(cx: &Cx) -> Result {
+pub async fn page(cx: &Cx) -> Result {
     view! {
         <section class="flex flex-col items-center gap-5 pt-6 text-center">
             <img src=(asset!("./hero.svg")) alt="A cup of coffee" class="size-36">
@@ -115,7 +115,7 @@ async fn home(cx: &Cx) -> Result {
             </p>
 
             <a
-                href="/menu"
+                href=(href!(menu::page))
                 class=(button_variants(ButtonVariant::Primary, ButtonSize::Lg))
             >
                 "Browse the menu"
@@ -135,7 +135,7 @@ async fn home(cx: &Cx) -> Result {
                         )
                         card_footer(
                             // Submitting an empty name clears the cookie.
-                            <form method="post" action="/">
+                            <form method="post" action=(href!(sign_in))>
                                 button(
                                     variant: ButtonVariant::Outline,
                                     size: ButtonSize::Sm,
@@ -157,7 +157,11 @@ async fn home(cx: &Cx) -> Result {
                             )
                         )
                         card_content(
-                            <form method="post" action="/" class="flex flex-col gap-3">
+                            <form
+                                method="post"
+                                action=(href!(sign_in))
+                                class="flex flex-col gap-3"
+                            >
                                 <div class="flex flex-col gap-2">
                                     label(attrs: attributes! { for="name" }, "Your name")
                                     input(
@@ -188,5 +192,5 @@ async fn sign_in(cx: &Cx, Form(form): Form<SignIn>) -> Result<SeeOther> {
     }
 
     // Post/Redirect/Get, so a reload does not submit the form again.
-    Ok(see_other("/"))
+    Ok(see_other(&href!(page).resolve(cx)))
 }
