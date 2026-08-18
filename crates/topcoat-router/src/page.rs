@@ -225,7 +225,7 @@ impl Route for PageWithLayouts {
             for layout in self.layouts.iter().rev() {
                 slot = layout.render(cx, slot).await;
             }
-            slot.into_response(cx)
+            slot?.into_response(cx)
         })
     }
 }
