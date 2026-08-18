@@ -2,9 +2,11 @@
 
 use std::{
     borrow::Cow,
+    convert::Infallible,
     fmt::{self, Display},
     future::Future,
     pin::{Pin, pin},
+    sync::Arc,
     task::{Context, Poll},
 };
 
@@ -18,7 +20,7 @@ use tower::ServiceExt;
 
 use crate::{
     Body, BoxError, IntoPath, Layer, LayerFuture, Methods, Next, OwnedMethods, Path, Route,
-    RouteFuture, RouteId,
+    RouteFuture, RouteId, Router,
     request::{Request, parts},
     response::Response,
 };
@@ -477,6 +479,71 @@ fn recover(error: BoxError) -> Error {
             repr => TowerNextError { repr }.into(),
         },
         Err(error) => TowerServiceError(error).into(),
+    }
+}
+
+/// A tower service dispatching every request to a topcoat [`Router`].
+///
+/// This adapter is the opposite of [`TowerRoute`]: it serves a whole topcoat
+/// router inside a tower application (an axum router, a hyper server, a tower
+/// middleware stack), typically to embed a topcoat application in one that
+/// owns the HTTP server. The service accepts a request with any body yielding
+/// [`Bytes`] and never errors; the router renders every failure, including a
+/// handler panic, as a response.
+///
+/// The service is `Clone`, `Send`, `Sync`, and infallible, satisfying the
+/// bounds tower servers commonly require. Clones are cheap and share the
+/// router's routing tables and app context.
+///
+/// The router matches the URI exactly as the service receives it, and
+/// generates its URLs (hrefs, redirects, asset URLs) from its own absolute
+/// route paths. Mount the service where the surrounding application forwards
+/// full request paths, like a root-level fallback; behind a mount that strips
+/// a path prefix, generated URLs would point outside the mount.
+///
+/// # Examples
+///
+/// ```rust
+/// use topcoat::router::{Router, tower::TowerService};
+///
+/// let router = Router::builder().build();
+///
+/// // Hand the service to a tower server, for example as an axum router's
+/// // `fallback_service`.
+/// let service = TowerService::new(router);
+/// ```
+#[derive(Clone)]
+pub struct TowerService {
+    /// The served router, shared with every clone of the service.
+    router: Arc<Router>,
+}
+
+impl TowerService {
+    /// Wraps `router` in a cloneable tower service.
+    #[must_use]
+    pub fn new(router: Router) -> Self {
+        Self {
+            router: Arc::new(router),
+        }
+    }
+}
+
+impl<B> tower::Service<Request<B>> for TowerService
+where
+    B: http_body::Body<Data = Bytes> + Send + 'static,
+    B::Error: Into<BoxError>,
+{
+    type Response = Response;
+    type Error = Infallible;
+    type Future = Pin<Box<dyn Future<Output = Result<Response, Infallible>> + Send>>;
+
+    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn call(&mut self, request: Request<B>) -> Self::Future {
+        let router = Arc::clone(&self.router);
+        Box::pin(async move { Ok(router.handle(request.map(Body::new)).await) })
     }
 }
 
@@ -1249,5 +1316,91 @@ mod tests {
 
         let route_error = error.downcast_ref::<TowerServiceError>().unwrap();
         assert!(route_error.get_ref().is::<std::io::Error>());
+    }
+
+    // -- TowerService --
+
+    /// A route echoing the request body, to observe foreign bodies crossing
+    /// into the router.
+    fn echo_body(cx: &Cx, body: Body) -> RouteFuture<'_> {
+        Box::pin(async move {
+            let bytes = to_bytes(body, usize::MAX).await.unwrap();
+            String::from_utf8_lossy(&bytes)
+                .into_owned()
+                .into_response(cx)
+        })
+    }
+
+    fn panic_route(_cx: &Cx, _body: Body) -> RouteFuture<'_> {
+        Box::pin(async move { panic!("handler panicked") })
+    }
+
+    /// Pins the bounds tower servers commonly require of a mounted service.
+    fn assert_server_bounds<S>(service: S) -> S
+    where
+        S: tower::Service<Request, Error = Infallible> + Clone + Send + Sync + 'static,
+    {
+        service
+    }
+
+    #[test]
+    fn tower_service_dispatches_to_the_router() {
+        let router = Router::builder()
+            .route(RouteFn::new(Method::GET, path("/x"), say_route))
+            .build();
+        let service = assert_server_bounds(TowerService::new(router));
+
+        let request = http::Request::builder()
+            .uri("/x")
+            .body(Body::empty())
+            .unwrap();
+        let response = block_on(service.clone().oneshot(request)).unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(&body_bytes(response)[..], b"route");
+
+        // An unmatched path renders through the router as a response, not an
+        // error.
+        let request = http::Request::builder()
+            .uri("/missing")
+            .body(Body::empty())
+            .unwrap();
+        let response = block_on(service.oneshot(request)).unwrap();
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[test]
+    fn tower_service_accepts_foreign_request_bodies() {
+        let router = Router::builder()
+            .route(RouteFn::new(Method::POST, path("/echo"), echo_body))
+            .build();
+        let service = TowerService::new(router);
+
+        // A body type from outside the router, the way a tower server hands
+        // requests over.
+        let request = http::Request::builder()
+            .method(Method::POST)
+            .uri("/echo")
+            .body(http_body_util::Full::new(Bytes::from("payload")))
+            .unwrap();
+        let response = block_on(service.oneshot(request)).unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(&body_bytes(response)[..], b"payload");
+    }
+
+    #[test]
+    fn tower_service_renders_a_panic_as_a_response() {
+        let router = Router::builder()
+            .route(RouteFn::new(Method::GET, path("/panic"), panic_route))
+            .build();
+        let service = TowerService::new(router);
+
+        let request = http::Request::builder()
+            .uri("/panic")
+            .body(Body::empty())
+            .unwrap();
+        let response = block_on(service.oneshot(request)).unwrap();
+
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
     }
 }

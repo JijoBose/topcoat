@@ -1,6 +1,6 @@
 Running tower services inside a topcoat router.
 
-The [tower](https://docs.rs/tower) ecosystem shares one service abstraction across axum, hyper, and a large catalog of middleware. This module (behind the `tower` feature) bridges it in the two directions a router cares about: [`TowerRoute`] mounts a tower service as a route, and [`TowerLayer`] runs tower middleware as a layer.
+The [tower](https://docs.rs/tower) ecosystem shares one service abstraction across axum, hyper, and a large catalog of middleware. This module (behind the `tower` feature) bridges it in both directions: [`TowerRoute`] mounts a tower service as a route and [`TowerLayer`] runs tower middleware as a layer inside a topcoat router, while [`TowerService`] serves a whole topcoat router as a tower service.
 
 # Mounting a service as a route
 
@@ -32,6 +32,21 @@ use tower::timeout::TimeoutLayer;
 let router = Router::builder()
     .layer(TowerLayer::new(TimeoutLayer::new(Duration::from_secs(5))).at("/api"))
     .build();
+```
+
+# Mounting a topcoat router in a tower application
+
+[`TowerService`] turns the bridge around: it serves a whole topcoat [`Router`](crate::Router) as a tower service, so an application that owns the HTTP server (an axum router, a hyper server) can embed a topcoat application. The service accepts a request with any body and never errors; the router renders every failure, including a handler panic, as a response.
+
+```rust,ignore
+use topcoat::router::{Router, RouterBuilderDiscoverExt, tower::TowerService};
+
+let topcoat = Router::builder().discover().build();
+
+// Serve every request the surrounding axum application does not handle.
+let app = axum::Router::new()
+    .route("/api/health", axum::routing::get(|| async { "ok" }))
+    .fallback_service(TowerService::new(topcoat));
 ```
 
 # Errors
